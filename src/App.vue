@@ -13,6 +13,7 @@
           <div class="nav-center">
             <button :class="{ active: currentView === 'form' }" @click="show('form')">Form</button>
             <button :class="{ active: currentView === 'datatable' }" @click="show('datatable')">Datatable</button>
+            <button :class="{ active: currentView === 'stats' }" @click="show('stats')">Stats</button>
           </div>
           <div class="nav-right">
             <button class="logout-btn" @click="logout">Logout</button>
@@ -24,6 +25,7 @@
           <TransactionForm v-if="currentView === 'form'" />
           <DataTable v-if="currentView === 'datatable'" :transactions="transactions"
             @deleted="id => transactions = transactions.filter(tx => tx.id !== id)" />
+          <Stats v-if="currentView === 'stats'" :transactions="transactions" />
         </div>
       </main>
     </div>
@@ -34,6 +36,7 @@
 import TransactionForm from './components/TransactionForm.vue';
 import DataTable from './components/DataTable.vue';
 import Login from './components/Login.vue';
+import Stats from './components/Stats.vue';
 import { ref, onMounted } from 'vue';
 import { db, auth } from './firebase';
 import { collection, getDocs } from 'firebase/firestore';
@@ -66,7 +69,7 @@ async function fetchTransactions() {
 // Mostra form o datatable
 async function show(view) {
   currentView.value = view;
-  if (view === 'datatable') {
+  if (view === 'datatable' || view === 'stats') {
     await fetchTransactions();
   }
 }

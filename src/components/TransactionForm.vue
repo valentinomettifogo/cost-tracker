@@ -24,6 +24,7 @@
         <select v-model="transaction.type">
           <option value="cost">Spend</option>
           <option value="income">Income</option>
+          <option value="saving">Saving</option>
         </select>
       </div>
       <div class="col-4 flex items-center">
