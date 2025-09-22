@@ -60,7 +60,7 @@ const transaction = ref({
 });
 
 onMounted(async () => {
-  const categoryDoc = await getDoc(doc(db, 'config', 'category'));
+  const categoryDoc = await getDoc(doc(db, "apps", "budget", "config", "category"));
   if (categoryDoc.exists()) {
     categories.value = categoryDoc.data().name || [];
     if (categories.value.length > 0) {
@@ -70,7 +70,7 @@ onMounted(async () => {
 });
 const addTransaction = async () => {
   try {
-    await addDoc(collection(db, "transactions"), {
+    await addDoc(collection(db, "apps", "budget", "transactions"), {
       ...transaction.value,
       date: Timestamp.fromDate(new Date(transaction.value.date))
     });

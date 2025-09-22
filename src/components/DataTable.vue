@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="mt-4">
     <table>
       <thead>
         <tr>
@@ -30,8 +30,10 @@
           <td>{{ tx.userId }}</td>
           <td>
             <button class="delete-btn" @click="confirmDelete(tx.id)" title="Elimina">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" style="color:#ff2d2d;vertical-align:middle">
-                <path d="M3 6h18v2H3V6zm2 3h14l-1.5 12.5c-.1.8-.8 1.5-1.6 1.5H8.1c-.8 0-1.5-.7-1.6-1.5L5 9zm5 2v8h2v-8h-2zm4 0v8h2v-8h-2zm-8 0v8h2v-8H6z"/>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"
+                style="color:#ff2d2d;vertical-align:middle">
+                <path
+                  d="M3 6h18v2H3V6zm2 3h14l-1.5 12.5c-.1.8-.8 1.5-1.6 1.5H8.1c-.8 0-1.5-.7-1.6-1.5L5 9zm5 2v8h2v-8h-2zm4 0v8h2v-8h-2zm-8 0v8h2v-8H6z" />
               </svg>
             </button>
           </td>
@@ -42,7 +44,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
 import { db } from '../firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 const props = defineProps({
@@ -71,7 +72,7 @@ function formatDate(date) {
 
 
 async function handleDelete(id) {
-  await deleteDoc(doc(db, 'transactions', id));
+  await deleteDoc(doc(db, 'apps', 'budget', 'transactions', id));
   emit('deleted', id);
 }
 
@@ -88,7 +89,8 @@ table {
   border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
   padding: 8px 12px;
   border: 1px solid #ddd;
   text-align: left;
@@ -136,6 +138,7 @@ tbody tr:nth-child(even) {
   color: #16a34a;
   font-weight: bold;
 }
+
 .amount-cost {
   color: #dc2626;
   font-weight: bold;
