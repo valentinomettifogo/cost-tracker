@@ -1,6 +1,6 @@
 # TODO
 
-- [ ] Componente con grafico per statistiche
+- [X] Componente con grafico per statistiche
     - Filtri: mese, anno, categoria
 - [X] Aggiungere autenticazione (auth)
     - [ ] Collegare l'auth con il DB
