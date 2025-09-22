@@ -1,7 +1,6 @@
 <template>
   <div class="stats-container">
     <div class="stats-header">
-      <h3>Statistics & Analytics</h3>
       
       <!-- Filtri -->
       <div class="filters">
@@ -40,15 +39,15 @@
           <h4>Total Income</h4>
           <span class="icon">📈</span>
         </div>
-        <div class="card-value">€{{ totalIncome.toFixed(2) }}</div>
+        <div class="card-value">€{{ formatCurrency(totalIncome) }}</div>
       </div>
       
       <div class="card cost">
         <div class="card-header">
-          <h4>Total Costs</h4>
+          <h4>Total Spends</h4>
           <span class="icon">📉</span>
         </div>
-        <div class="card-value">€{{ totalCosts.toFixed(2) }}</div>
+        <div class="card-value">€{{ formatCurrency(totalCosts) }}</div>
       </div>
       
       <div class="card saving">
@@ -56,7 +55,7 @@
           <h4>Total Savings</h4>
           <span class="icon">💰</span>
         </div>
-        <div class="card-value">€{{ totalSavings.toFixed(2) }}</div>
+        <div class="card-value">€{{ formatCurrency(totalSavings) }}</div>
       </div>
       
       <div class="card balance">
@@ -64,7 +63,7 @@
           <h4>Net Balance</h4>
           <span class="icon">⚖️</span>
         </div>
-        <div class="card-value" :class="{ negative: netBalance < 0 }">€{{ netBalance.toFixed(2) }}</div>
+        <div class="card-value" :class="{ negative: netBalance < 0 }">€{{ formatCurrency(netBalance) }}</div>
       </div>
     </div>
 
@@ -148,6 +147,16 @@ const months = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+// Formatter per valuta con virgola come decimale e punto come migliaia
+const currencyFormatter = new Intl.NumberFormat('de-DE', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+});
+
+const formatCurrency = (value) => {
+  return currencyFormatter.format(value);
+};
+
 // Computed properties
 const availableYears = computed(() => {
   const years = new Set();
@@ -194,7 +203,7 @@ const filteredTransactions = computed(() => {
     const yearMatch = selectedYear.value === 'all' || year === parseInt(selectedYear.value);
     const monthMatch = selectedMonth.value === 'all' || month === parseInt(selectedMonth.value);
     const categoryMatch = selectedCategory.value === 'all' || tx.category === selectedCategory.value;
-    
+        
     return yearMatch && monthMatch && categoryMatch;
   });
 });
@@ -208,13 +217,13 @@ const totalIncome = computed(() => {
 
 const totalCosts = computed(() => {
   return filteredTransactions.value
-    .filter(tx => tx.type === 'cost')
+    .filter(tx => tx.type === 'spend')
     .reduce((sum, tx) => sum + (tx.amount || 0), 0);
 });
 
 const totalSavings = computed(() => {
   return filteredTransactions.value
-    .filter(tx => tx.type === 'saving')
+    .filter(tx => tx.type === 'savings')
     .reduce((sum, tx) => sum + (tx.amount || 0), 0);
 });
 
@@ -242,7 +251,9 @@ const barChartData = computed(() => {
       monthlyData[monthYear] = { income: 0, cost: 0, saving: 0 };
     }
     
-    monthlyData[monthYear][tx.type] += tx.amount || 0;
+    if (tx.type === 'income') monthlyData[monthYear].income += tx.amount || 0;
+    if (tx.type === 'spend') monthlyData[monthYear].cost += tx.amount || 0;
+    if (tx.type === 'savings') monthlyData[monthYear].saving += tx.amount || 0;
   });
   
   const sortedMonths = Object.keys(monthlyData).sort();
@@ -267,8 +278,8 @@ const barChartData = computed(() => {
       {
         label: 'Savings',
         data: sortedMonths.map(month => monthlyData[month].saving),
-        backgroundColor: '#ea580c',
-        borderColor: '#c2410c',
+        backgroundColor: '#b99b04',
+        borderColor: '#b99b04',
         borderWidth: 1
       }
     ]
@@ -279,10 +290,12 @@ const pieChartData = computed(() => {
   const categoryData = {};
   
   filteredTransactions.value.forEach(tx => {
-    if (!categoryData[tx.category]) {
-      categoryData[tx.category] = 0;
+    if (tx.type !== 'income') {
+      if (!categoryData[tx.category]) {
+        categoryData[tx.category] = 0;
+      }
+      categoryData[tx.category] += tx.amount || 0;
     }
-    categoryData[tx.category] += tx.amount || 0;
   });
   
   const colors = [
@@ -335,7 +348,7 @@ const createBarChart = () => {
           beginAtZero: true,
           ticks: {
             callback: function(value) {
-              return '€' + value.toFixed(0);
+              return '€' + currencyFormatter.format(value);
             }
           }
         }
@@ -344,7 +357,7 @@ const createBarChart = () => {
         tooltip: {
           callbacks: {
             label: function(context) {
-              return context.dataset.label + ': €' + context.parsed.y.toFixed(2);
+              return context.dataset.label + ': €' + context.parsed.y.toFixed(2).replace('.', ',');
             }
           }
         },
@@ -378,7 +391,7 @@ const createPieChart = () => {
               const value = context.parsed;
               const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
               const percentage = ((value / total) * 100).toFixed(1);
-              return context.label + ': €' + value.toFixed(2) + ' (' + percentage + '%)';
+              return context.label + ': €' + value.toFixed(2).replace('.', ',') + ' (' + percentage + '%)';
             }
           }
         },
@@ -502,7 +515,7 @@ watch(() => props.transactions, () => {
 }
 
 .card.saving {
-  border-left: 4px solid #ea580c;
+  border-left: 4px solid #FFD700;
 }
 
 .card.balance {

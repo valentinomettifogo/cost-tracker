@@ -17,7 +17,7 @@
       <button class="btn btn-primary" @click="handleLogin">Login</button>
       <button class="btn btn-secondary" @click="handleRegister">Register</button>
       <div class="divider">
-        <span>oppure</span>
+        <span></span>
       </div>
       <button class="btn btn-google" @click="handleGoogle">
         <svg class="google-icon" viewBox="0 0 24 24" width="18" height="18">
@@ -34,15 +34,15 @@
 
 <script setup>
 import { ref } from 'vue';
-import { auth, googleProvider } from '../firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { useAuth } from '../composables/useAuth';
 
 const email = ref('');
 const password = ref('');
+const { login, register, loginWithGoogle } = useAuth();
 
 const handleLogin = async () => {
   try {
-    await signInWithEmailAndPassword(auth, email.value, password.value);
+    await login(email.value, password.value);
   } catch (e) {
     alert(e.message);
   }
@@ -50,7 +50,7 @@ const handleLogin = async () => {
 
 const handleRegister = async () => {
   try {
-    await createUserWithEmailAndPassword(auth, email.value, password.value);
+    await register(email.value, password.value);
   } catch (e) {
     alert(e.message);
   }
@@ -58,12 +58,12 @@ const handleRegister = async () => {
 
 const handleGoogle = async () => {
   try {
-    await signInWithPopup(auth, googleProvider);
+    await loginWithGoogle();
   } catch (e) {
     alert(e.message);
   }
 };
-</script>  
+</script>
 
 <style scoped>
 .login-container {

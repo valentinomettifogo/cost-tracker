@@ -1,9 +1,9 @@
 <template>
-  <form @submit.prevent="addTransaction">
+  <form @submit.prevent="handleSubmit">
     <div class="grid">
       <div class="col-12">
         <label>Amount</label>
-        <input v-model.number="transaction.amount" type="number" required />
+  <input v-model.number="transaction.amount" type="number" step="0.01" required />
       </div>
       <div class="col-12">
         <label>Category</label>
@@ -22,9 +22,9 @@
       <div class="col-8">
         <label>Type</label>
         <select v-model="transaction.type">
-          <option value="cost">Spend</option>
+          <option value="spend">Spend</option>
           <option value="income">Income</option>
-          <option value="saving">Saving</option>
+          <option value="savings">Savings</option>
         </select>
       </div>
       <div class="col-4 flex items-center">
@@ -39,14 +39,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { db } from "../firebase";
-import { collection, addDoc, Timestamp, doc, getDoc } from "firebase/firestore";
+import { collection, addDoc, updateDoc, Timestamp, doc, getDoc } from "firebase/firestore";
+const props = defineProps({
+  editTransaction: {
+    type: Object,
+    default: null
+  }
+});
+const emit = defineEmits(['edited']);
 
 function getToday() {
   const d = new Date();
   return d.toISOString().slice(0, 10);
 }
+
+import { useAuth } from "../composables/useAuth";
+const { user } = useAuth();
 
 const categories = ref([]);
 const transaction = ref({
@@ -56,38 +66,89 @@ const transaction = ref({
   date: getToday(),
   description: "",
   isRecurring: false,
-  type: "cost",
-  userId: "user_123"
+  type: "spend",
+  userId: user.value?.uid || ""
 });
+
+// Precompila il form se editTransaction cambia
+watch(() => props.editTransaction, (val) => {
+  if (val) {
+    transaction.value = {
+      ...val,
+      date: formatDateForInput(val.date)
+    };
+  } else {
+    resetForm();
+  }
+}, { immediate: true });
 
 onMounted(async () => {
   const categoryDoc = await getDoc(doc(db, "apps", "budget", "config", "category"));
   if (categoryDoc.exists()) {
     categories.value = categoryDoc.data().name || [];
-    if (categories.value.length > 0) {
+    // Imposta la categoria di default solo se non stai editando
+    if (categories.value.length > 0 && !props.editTransaction) {
       transaction.value.category = categories.value[0];
     }
   }
 });
-const addTransaction = async () => {
-  try {
-    await addDoc(collection(db, "apps", "budget", "transactions"), {
-      ...transaction.value,
-      date: Timestamp.fromDate(new Date(transaction.value.date))
-    });
-    alert("Transaction saved!");
-    transaction.value = {
-      amount: 0,
-      category: "",
-      currency: "EUR",
-      date: getToday(),
-      description: "",
-      isRecurring: false,
-      type: "cost",
-      userId: "user_123"
-    };
-  } catch (e) {
-    console.error("Error adding document: ", e);
+
+function formatDateForInput(date) {
+  if (!date) return getToday();
+  let d;
+  if (typeof date === 'string') {
+    d = new Date(date);
+  } else if (date.seconds) {
+    d = new Date(date.seconds * 1000);
+  } else {
+    d = new Date(date);
+  }
+  // Compensa il fuso orario locale
+  const tzOffset = d.getTimezoneOffset() * 60000;
+  const localISO = new Date(d.getTime() - tzOffset).toISOString().slice(0, 10);
+  return localISO;
+}
+
+function resetForm() {
+  transaction.value = {
+    amount: 0,
+    category: "",
+    currency: "EUR",
+    date: getToday(),
+    description: "",
+    isRecurring: false,
+    type: "spend",
+    userId: user.value?.uid || ""
+  };
+}
+
+const handleSubmit = async () => {
+  if (props.editTransaction && props.editTransaction.id) {
+    // Modifica
+    try {
+      await updateDoc(doc(db, "apps", "budget", "transactions", props.editTransaction.id), {
+        ...transaction.value,
+        date: Timestamp.fromDate(new Date(transaction.value.date)),
+        userId: user.value?.uid || ""
+      });
+      emit('edited', { ...transaction.value, id: props.editTransaction.id });
+      resetForm();
+    } catch (e) {
+      console.error("Error updating document: ", e);
+    }
+  } else {
+    // Nuova
+    try {
+      await addDoc(collection(db, "apps", "budget", "transactions"), {
+        ...transaction.value,
+        userId: user.value?.uid || "",
+        date: Timestamp.fromDate(new Date(transaction.value.date))
+      });
+      alert("Transaction saved!");
+      resetForm();
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
   }
 };
 </script>

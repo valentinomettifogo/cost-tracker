@@ -12,6 +12,7 @@
     <table>
       <thead>
         <tr>
+          <th></th>
           <th>Amount</th>
           <th>Category</th>
           <!-- <th>Currency</th> -->
@@ -20,14 +21,21 @@
           <th>Recurring</th>
           <!-- <th>Note</th> -->
           <th>Type</th>
-          <th>User ID</th>
+          <th>User</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="tx in transactions" :key="tx.id">
+          <td>
+            <button class="edit-btn" @click="emitEdit(tx)" title="Modifica">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" style="color:#2563eb;vertical-align:middle">
+                <path d="M3 17.25V21h3.75l11.06-11.06-3.75-3.75L3 17.25zm14.71-9.04a1.003 1.003 0 0 0 0-1.42l-2.54-2.54a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+              </svg>
+            </button>
+          </td>
           <td :class="getAmountClass(tx.type)">
-            <span v-if="tx.type === 'cost'" style="color:inherit">-</span>{{ tx.amount }}
+            <span v-if="tx.type === 'spend'" style="color:inherit">-</span>{{ formatCurrency(tx.amount) }}
           </td>
           <td>{{ tx.category }}</td>
           <!-- <td>{{ tx.currency }}</td> -->
@@ -36,7 +44,7 @@
           <td>{{ tx.isRecurring ? 'Yes' : 'No' }}</td>
           <!-- <td>{{ tx.note }}</td> -->
           <td>{{ tx.type }}</td>
-          <td>{{ tx.userId }}</td>
+          <td>{{ props.userIdToName[tx.userId] || tx.userId }}</td>
           <td>
             <button class="delete-btn" @click="confirmDelete(tx.id)" title="Elimina">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"
@@ -59,9 +67,17 @@ const props = defineProps({
   transactions: {
     type: Array,
     required: true
+  },
+  userIdToName: {
+    type: Object,
+    default: () => ({})
   }
 });
-const emit = defineEmits(['deleted']);
+const emit = defineEmits(['deleted', 'edit']);
+
+function emitEdit(tx) {
+  emit('edit', tx);
+}
 
 function formatDate(date) {
   if (!date) return '';
@@ -83,13 +99,18 @@ function getAmountClass(type) {
   switch (type) {
     case 'income':
       return 'amount-income';
-    case 'cost':
+    case 'spend':
       return 'amount-cost';
-    case 'saving':
+    case 'savings':
       return 'amount-saving';
     default:
       return 'amount-cost';
   }
+}
+
+function formatCurrency(amount) {
+  if (typeof amount !== 'number') amount = Number(amount) || 0;
+  return amount.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
 }
 
 
@@ -159,6 +180,23 @@ function formatDateForCSV(date) {
 </script>
 
 <style scoped>
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.edit-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  transition: color 0.2s;
+}
+.edit-btn:hover {
+  color: #1d4ed8;
+}
 .table-header {
   display: flex;
   justify-content: space-between;
@@ -260,7 +298,7 @@ tbody tr:nth-child(even) {
 }
 
 .amount-saving {
-  color: #ea580c;
+  color: #FFD700;
   font-weight: bold;
 }
 </style>
