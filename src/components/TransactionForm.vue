@@ -13,7 +13,7 @@
       </div>
       <div class="col-12">
         <label>Description</label>
-        <input v-model="transaction.description" type="text" />
+        <input v-model="transaction.description" type="text" required />
       </div>
       <div class="col-12">
         <label>Date</label>
@@ -125,11 +125,23 @@ function resetForm() {
 }
 
 const handleSubmit = async () => {
+  // Validazione aggiuntiva per i campi obbligatori
+  if (!transaction.value.amount || transaction.value.amount <= 0) {
+    alert("Please enter a valid amount greater than 0");
+    return;
+  }
+  
+  if (!transaction.value.description || transaction.value.description.trim() === "") {
+    alert("Please enter a description");
+    return;
+  }
+
   if (props.editTransaction && props.editTransaction.id) {
     // Modifica
     try {
       await updateDoc(doc(db, "apps", "budget", "transactions", props.editTransaction.id), {
         ...transaction.value,
+        description: transaction.value.description.trim(), // Rimuove spazi extra
         date: Timestamp.fromDate(new Date(transaction.value.date)),
         userId: user.value?.uid || ""
       });
@@ -143,6 +155,7 @@ const handleSubmit = async () => {
     try {
       await addDoc(collection(db, "apps", "budget", "transactions"), {
         ...transaction.value,
+        description: transaction.value.description.trim(), // Rimuove spazi extra
         userId: user.value?.uid || "",
         date: Timestamp.fromDate(new Date(transaction.value.date))
       });
