@@ -37,7 +37,7 @@
               </button>
             </td>
             <td :class="getAmountClass(tx.type)">
-              <span v-if="tx.type === 'spend'" style="color:inherit">-</span>{{ formatCurrency(tx.amount) }}
+              {{ formatCurrency(tx.amount) }}
             </td>
             <td>{{ tx.category }}</td>
             <!-- <td>{{ tx.currency }}</td> -->
@@ -66,7 +66,7 @@
       <div v-for="tx in transactions" :key="tx.id" class="transaction-card">
         <div class="card-header">
           <div class="amount" :class="getAmountClass(tx.type)">
-            <span v-if="tx.type === 'spend'" style="color:inherit">-</span>{{ formatCurrency(tx.amount) }}
+            {{ formatCurrency(tx.amount) }}
           </div>
           <div class="actions">
             <button class="edit-btn" @click="emitEdit(tx)" title="Modifica">

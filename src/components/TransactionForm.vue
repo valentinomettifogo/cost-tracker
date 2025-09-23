@@ -27,9 +27,11 @@
           <option value="savings">Savings</option>
         </select>
       </div>
-      <div class="col-4 flex items-center">
-        <label class="mr-2">Recurring?</label>
-        <input v-model="transaction.isRecurring" type="checkbox" />
+      <div class="col-4">
+        <div class="flex items-center" style="height: 100%; padding-top: 1.5rem;">
+          <input v-model="transaction.isRecurring" type="checkbox" id="recurring" />
+          <label for="recurring" class="mr-0" style="margin-bottom: 0;">Recurring?</label>
+        </div>
       </div>
     </div>
     <div class="mt-4">
@@ -155,12 +157,29 @@ const handleSubmit = async () => {
 
 <style scoped>
 form {
-  width: 40%;
+  width: 100%;
   max-width: 900px;
-  margin: 2rem auto;
-  padding: 1rem 2rem;
+  margin: 1rem auto;
+  padding: 1rem;
   background: #ffffff;
   box-sizing: border-box;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Desktop styles */
+@media (min-width: 768px) {
+  form {
+    width: 60%;
+    margin: 2rem auto;
+    padding: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  form {
+    width: 40%;
+  }
 }
 
 .form-grid {
@@ -174,6 +193,7 @@ label {
   color: #374151;
   font-size: 0.875rem;
   margin-bottom: 0.25rem;
+  display: block;
 }
 
 input,
@@ -190,6 +210,23 @@ textarea {
   width: 100%;
 }
 
+/* Mobile improvements */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    padding: 1rem;
+    font-size: 16px; /* Previene lo zoom su iOS */
+    border-radius: 8px;
+  }
+  
+  label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+}
+
 input:focus,
 select:focus,
 textarea:focus {
@@ -203,6 +240,23 @@ input[type="checkbox"] {
   height: 18px;
   margin-right: 0.5rem;
   accent-color: #374151;
+}
+
+/* Mobile checkbox adjustments */
+@media (max-width: 767px) {
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .col-4.flex.items-center {
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .col-4.flex.items-center label {
+    margin-bottom: 0;
+  }
 }
 
 textarea {
@@ -226,11 +280,52 @@ button {
   box-sizing: border-box;
 }
 
+/* Mobile button improvements */
+@media (max-width: 767px) {
+  button {
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    margin-top: 1rem;
+  }
+}
+
 button:hover {
   background: #4b5563;
 }
 
 button:active {
   background: #1f2937;
+}
+
+/* Mobile grid adjustments */
+@media (max-width: 767px) {
+  .grid {
+    gap: 1rem;
+  }
+  
+  .col-8,
+  .col-4 {
+    grid-column: span 12;
+  }
+  
+  /* Stack type and recurring on mobile */
+  .type-recurring-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .col-8 {
+    grid-column: span 8;
+  }
+  
+  .col-4 {
+    grid-column: span 4;
+  }
 }
 </style>

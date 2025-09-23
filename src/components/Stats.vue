@@ -337,6 +337,8 @@ const createBarChart = () => {
   const ctx = barChart.value?.getContext('2d');
   if (!ctx) return;
   
+  const isMobile = window.innerWidth < 768;
+  
   barChartInstance = new Chart(ctx, {
     type: 'bar',
     data: barChartData.value,
@@ -344,11 +346,22 @@ const createBarChart = () => {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
+        x: {
+          ticks: {
+            maxRotation: isMobile ? 45 : 0,
+            font: {
+              size: isMobile ? 10 : 12
+            }
+          }
+        },
         y: {
           beginAtZero: true,
           ticks: {
             callback: function(value) {
               return '€' + currencyFormatter.format(value);
+            },
+            font: {
+              size: isMobile ? 10 : 12
             }
           }
         }
@@ -359,10 +372,22 @@ const createBarChart = () => {
             label: function(context) {
               return context.dataset.label + ': €' + context.parsed.y.toFixed(2).replace('.', ',');
             }
+          },
+          titleFont: {
+            size: isMobile ? 12 : 14
+          },
+          bodyFont: {
+            size: isMobile ? 11 : 13
           }
         },
         legend: {
-          position: 'top'
+          position: 'top',
+          labels: {
+            font: {
+              size: isMobile ? 11 : 12
+            },
+            padding: isMobile ? 10 : 20
+          }
         }
       }
     }
@@ -377,6 +402,8 @@ const createPieChart = () => {
   
   const ctx = pieChart.value?.getContext('2d');
   if (!ctx) return;
+  
+  const isMobile = window.innerWidth < 768;
   
   pieChartInstance = new Chart(ctx, {
     type: 'pie',
@@ -393,10 +420,24 @@ const createPieChart = () => {
               const percentage = ((value / total) * 100).toFixed(1);
               return context.label + ': €' + value.toFixed(2).replace('.', ',') + ' (' + percentage + '%)';
             }
+          },
+          titleFont: {
+            size: isMobile ? 12 : 14
+          },
+          bodyFont: {
+            size: isMobile ? 11 : 13
           }
         },
         legend: {
-          position: 'bottom'
+          position: isMobile ? 'bottom' : 'bottom',
+          labels: {
+            font: {
+              size: isMobile ? 10 : 12
+            },
+            padding: isMobile ? 8 : 20,
+            boxWidth: isMobile ? 12 : 20,
+            usePointStyle: isMobile
+          }
         }
       }
     }
@@ -432,7 +473,14 @@ watch(() => props.transactions, () => {
 .stats-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
+}
+
+/* Mobile first approach */
+@media (min-width: 768px) {
+  .stats-container {
+    padding: 2rem;
+  }
 }
 
 .stats-header {
@@ -442,31 +490,59 @@ watch(() => props.transactions, () => {
 .stats-header h3 {
   margin: 0 0 1.5rem 0;
   color: #1f2937;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .stats-header h3 {
+    font-size: 2rem;
+  }
 }
 
 .filters {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: end;
   flex-wrap: wrap;
-  padding: 1.5rem;
+  padding: 1rem;
   background: #f8fafc;
   border-radius: 8px;
   border-left: 4px solid #667eea;
+}
+
+@media (min-width: 768px) {
+  .filters {
+    gap: 1rem;
+    padding: 1.5rem;
+  }
 }
 
 .filter-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  flex: 1;
+  min-width: 100px;
+}
+
+@media (min-width: 768px) {
+  .filter-group {
+    flex: none;
+    min-width: 120px;
+  }
 }
 
 .filter-group label {
   font-weight: 600;
   color: #374151;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
+}
+
+@media (min-width: 768px) {
+  .filter-group label {
+    font-size: 0.875rem;
+  }
 }
 
 .filter-group select {
@@ -474,7 +550,15 @@ watch(() => props.transactions, () => {
   border: 1px solid #d1d5db;
   border-radius: 4px;
   background: white;
-  min-width: 120px;
+  font-size: 0.875rem;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .filter-group select {
+    width: auto;
+    min-width: 120px;
+  }
 }
 
 .reset-btn {
@@ -486,6 +570,16 @@ watch(() => props.transactions, () => {
   cursor: pointer;
   font-weight: 500;
   height: fit-content;
+  width: 100%;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 768px) {
+  .reset-btn {
+    width: auto;
+    margin-top: 0;
+  }
 }
 
 .reset-btn:hover {
@@ -494,16 +588,29 @@ watch(() => props.transactions, () => {
 
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
   margin: 2rem 0;
 }
 
+@media (min-width: 768px) {
+  .summary-cards {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
 .card {
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   background: white;
+}
+
+@media (min-width: 768px) {
+  .card {
+    padding: 1.5rem;
+  }
 }
 
 .card.income {
@@ -526,26 +633,50 @@ watch(() => props.transactions, () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .card-header {
+    margin-bottom: 1rem;
+  }
 }
 
 .card-header h4 {
   margin: 0;
   color: #374151;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
+@media (min-width: 768px) {
+  .card-header h4 {
+    font-size: 0.875rem;
+  }
+}
+
 .card-header .icon {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .card-header .icon {
+    font-size: 1.5rem;
+  }
 }
 
 .card-value {
-  font-size: 2rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #1f2937;
+}
+
+@media (min-width: 768px) {
+  .card-value {
+    font-size: 2rem;
+  }
 }
 
 .card-value.negative {
@@ -554,28 +685,66 @@ watch(() => props.transactions, () => {
 
 .charts-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-  gap: 2rem;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
   margin: 2rem 0;
+}
+
+@media (min-width: 1024px) {
+  .charts-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
 }
 
 .chart-section {
   background: white;
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 768px) {
+  .chart-section {
+    padding: 1.5rem;
+  }
 }
 
 .chart-section h4 {
   margin: 0 0 1rem 0;
   color: #374151;
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 600;
+}
+
+@media (min-width: 768px) {
+  .chart-section h4 {
+    font-size: 1.25rem;
+  }
 }
 
 .chart-wrapper {
   position: relative;
-  height: 400px;
+  height: 250px;
+  width: 100%;
+}
+
+@media (min-width: 480px) {
+  .chart-wrapper {
+    height: 300px;
+  }
+}
+
+@media (min-width: 768px) {
+  .chart-wrapper {
+    height: 350px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .chart-wrapper {
+    height: 400px;
+  }
 }
 
 .table-summary {
@@ -590,20 +759,45 @@ watch(() => props.transactions, () => {
   margin: 0;
   color: #4b5563;
   font-weight: 500;
+  font-size: 0.875rem;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
+  .table-summary h4 {
+    font-size: 1rem;
+  }
+}
+
+/* Mobile specific optimizations */
+@media (max-width: 479px) {
   .filters {
-    flex-direction: column;
-    align-items: stretch;
+    padding: 0.75rem;
   }
   
-  .charts-container {
+  .filter-group {
+    min-width: 80px;
+  }
+  
+  .filter-group select {
+    font-size: 0.8rem;
+    padding: 0.4rem;
+  }
+  
+  .summary-cards {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .card {
+    padding: 0.75rem;
+  }
+  
+  .card-value {
+    font-size: 1.1rem;
   }
   
   .chart-wrapper {
-    height: 300px;
+    height: 220px;
   }
 }
 </style>

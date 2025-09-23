@@ -14,5 +14,5 @@
 - [ ] Pubblicare su Vercel 
     - possibile nome: cost-tracker.valentinomettifogo.com
 - [ ] recurring crea un evento uguale ogni mese allo stesso giorno fino a fine anno
-- [ ] rivedi lo stile specialmente per mobile
+- [X] rivedi lo stile specialmente per mobile
 - [ ] correggi i dati storici che ci sono mesi senza stipendio
