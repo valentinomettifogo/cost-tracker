@@ -4,12 +4,13 @@
       <div class="col-12">
         <label>Amount</label>
         <input 
-          v-model.number="transaction.amount" 
-          type="number" 
-          step="0.01" 
+          v-model="transaction.amount" 
+          type="text" 
           inputmode="decimal"
-          pattern="[0-9]*"
+          pattern="[0-9]*[,.]?[0-9]*"
           required 
+          @input="handleAmountInput"
+          @blur="formatAmountDisplay"
         />
       </div>
       <div class="col-12">
@@ -80,7 +81,7 @@ const { showError, showSuccess } = useModal();
 
 const categories = ref([]);
 const transaction = ref({
-  amount: 0,
+  amount: "",
   category: "",
   currency: "EUR",
   date: getToday(),
@@ -132,7 +133,7 @@ function formatDateForInput(date) {
 
 function resetForm() {
   transaction.value = {
-    amount: 0,
+    amount: "",
     category: "",
     currency: "EUR",
     date: getToday(),
@@ -147,9 +148,50 @@ function resetForm() {
   }
 }
 
+// Handle amount input with comma/dot conversion
+function handleAmountInput(event) {
+  let value = event.target.value;
+  // Allow only numbers, commas, and dots
+  value = value.replace(/[^0-9,.]/g, '');
+  
+  // Replace comma with dot for consistency
+  value = value.replace(',', '.');
+  
+  // Ensure only one decimal separator
+  const parts = value.split('.');
+  if (parts.length > 2) {
+    value = parts[0] + '.' + parts.slice(1).join('');
+  }
+  
+  // Limit to 2 decimal places
+  if (parts[1] && parts[1].length > 2) {
+    value = parts[0] + '.' + parts[1].substring(0, 2);
+  }
+  
+  transaction.value.amount = value;
+}
+
+// Format amount display when user leaves the field
+function formatAmountDisplay() {
+  if (transaction.value.amount) {
+    const numericValue = parseFloat(transaction.value.amount.toString().replace(',', '.'));
+    if (!isNaN(numericValue)) {
+      transaction.value.amount = numericValue.toFixed(2);
+    }
+  }
+}
+
+// Get numeric amount value for validation and submission
+function getNumericAmount() {
+  if (!transaction.value.amount) return 0;
+  const numericValue = parseFloat(transaction.value.amount.toString().replace(',', '.'));
+  return isNaN(numericValue) ? 0 : numericValue;
+}
+
 const handleSubmit = async () => {
-  // Validazione aggiuntiva per i campi obbligatori
-  if (!transaction.value.amount || transaction.value.amount <= 0) {
+  // Additional validation for required fields
+  const numericAmount = getNumericAmount();
+  if (!numericAmount || numericAmount <= 0) {
     showError("Please enter a valid amount greater than 0", "Invalid Amount");
     return;
   }
@@ -163,15 +205,16 @@ const handleSubmit = async () => {
   transaction.value.isRecurring = false;
 
   if (props.editTransaction && props.editTransaction.id) {
-    // Modifica
+    // Edit
     try {
       await updateDoc(doc(db, "apps", "budget", "transactions", props.editTransaction.id), {
         ...transaction.value,
+        amount: numericAmount, // Use numeric amount for database
         description: transaction.value.description.trim(), // Removes extra spaces
         date: Timestamp.fromDate(new Date(transaction.value.date)),
         userId: user.value?.uid || ""
       });
-      emit('edited', { ...transaction.value, id: props.editTransaction.id });
+      emit('edited', { ...transaction.value, amount: numericAmount, id: props.editTransaction.id });
       resetForm();
       showSuccess("Transaction updated successfully!", "Success");
     } catch (e) {
@@ -179,10 +222,11 @@ const handleSubmit = async () => {
       showError("Failed to update transaction. Please try again.", "Update Error");
     }
   } else {
-    // Nuova
+    // New
     try {
       await addDoc(collection(db, "apps", "budget", "transactions"), {
         ...transaction.value,
+        amount: numericAmount, // Use numeric amount for database
         description: transaction.value.description.trim(), // Removes extra spaces
         userId: user.value?.uid || "",
         date: Timestamp.fromDate(new Date(transaction.value.date))
