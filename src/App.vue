@@ -3,16 +3,16 @@
   <!-- Login -->
   <Login v-if="!user" />
 
-  <!-- Accesso negato -->
+  <!-- Access Denied -->
   <div v-else-if="!isAllowed">
     <div class="denied-container">
-      <h2>Accesso negato</h2>
-      <p>Non sei autorizzato ad accedere a questa app.</p>
+      <h2>Access Denied</h2>
+      <p>You are not authorized to access this application.</p>
       <button class="logout-btn" @click="logout">Logout</button>
     </div>
   </div>
 
-  <!-- App principale -->
+  <!-- Main App -->
   <div v-else>
     <div class="">
       <header>

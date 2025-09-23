@@ -147,8 +147,8 @@ const months = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-// Formatter per valuta con virgola come decimale e punto come migliaia
-const currencyFormatter = new Intl.NumberFormat('de-DE', {
+// Formatter per valuta con punto come decimale e virgola come migliaia (formato US)
+const currencyFormatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2
 });

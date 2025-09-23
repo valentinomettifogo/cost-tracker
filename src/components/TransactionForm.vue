@@ -141,7 +141,7 @@ const handleSubmit = async () => {
     try {
       await updateDoc(doc(db, "apps", "budget", "transactions", props.editTransaction.id), {
         ...transaction.value,
-        description: transaction.value.description.trim(), // Rimuove spazi extra
+        description: transaction.value.description.trim(), // Removes extra spaces
         date: Timestamp.fromDate(new Date(transaction.value.date)),
         userId: user.value?.uid || ""
       });
@@ -155,7 +155,7 @@ const handleSubmit = async () => {
     try {
       await addDoc(collection(db, "apps", "budget", "transactions"), {
         ...transaction.value,
-        description: transaction.value.description.trim(), // Rimuove spazi extra
+        description: transaction.value.description.trim(), // Removes extra spaces
         userId: user.value?.uid || "",
         date: Timestamp.fromDate(new Date(transaction.value.date))
       });

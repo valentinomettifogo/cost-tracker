@@ -232,7 +232,7 @@ const availableMonthsYears = computed(() => {
       }
       
       const year = d.getFullYear();
-      const month = d.toLocaleString('it-IT', { month: 'long' });
+      const month = d.toLocaleString('en-US', { month: 'long' });
       const monthYear = `${month} ${year}`;
       monthsYears.add(monthYear);
     }
@@ -248,9 +248,9 @@ const availableMonthsYears = computed(() => {
 
 function getMonthNumber(monthName) {
   const months = {
-    'gennaio': '01', 'febbraio': '02', 'marzo': '03', 'aprile': '04',
-    'maggio': '05', 'giugno': '06', 'luglio': '07', 'agosto': '08',
-    'settembre': '09', 'ottobre': '10', 'novembre': '11', 'dicembre': '12'
+    'january': '01', 'february': '02', 'march': '03', 'april': '04',
+    'may': '05', 'june': '06', 'july': '07', 'august': '08',
+    'september': '09', 'october': '10', 'november': '11', 'december': '12'
   };
   return months[monthName.toLowerCase()] || '01';
 }
@@ -298,7 +298,7 @@ const filteredTransactions = computed(() => {
       }
       
       const year = d.getFullYear();
-      const month = d.toLocaleString('it-IT', { month: 'long' });
+      const month = d.toLocaleString('en-US', { month: 'long' });
       const txMonthYear = `${month} ${year}`;
       
       return txMonthYear === selectedMonthYear.value;
@@ -352,7 +352,7 @@ function getAmountClass(type) {
 
 function formatCurrency(amount) {
   if (typeof amount !== 'number') amount = Number(amount) || 0;
-  return amount.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+  return amount.toLocaleString('en-US', { style: 'currency', currency: 'EUR' });
 }
 
 
@@ -362,7 +362,7 @@ async function handleDelete(id) {
 }
 
 function confirmDelete(id) {
-  if (window.confirm('Sei sicuro di voler eliminare questa transazione?')) {
+  if (window.confirm('Are you sure you want to delete this transaction?')) {
     handleDelete(id);
   }
 }
