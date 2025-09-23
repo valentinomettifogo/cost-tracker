@@ -280,12 +280,13 @@ nav button {
 }
 
 nav button:hover {
-  background: #f3f4f6;
+  background: #4b5563;
+  color: white;
   transform: translateY(-1px);
 }
 
 nav button.active {
-  background: #667eea;
+  background: #374151;
   color: white;
   font-weight: 600;
 }

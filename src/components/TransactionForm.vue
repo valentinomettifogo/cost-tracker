@@ -29,8 +29,17 @@
       </div>
       <div class="col-4">
         <div class="flex items-center" style="height: 100%; padding-top: 1.5rem;">
-          <input v-model="transaction.isRecurring" type="checkbox" id="recurring" />
-          <label for="recurring" class="mr-0" style="margin-bottom: 0;">Recurring?</label>
+          <input 
+            v-model="transaction.isRecurring" 
+            type="checkbox" 
+            id="recurring" 
+            disabled 
+            class="disabled-checkbox"
+          />
+          <label for="recurring" class="mr-0 disabled-label" style="margin-bottom: 0;">
+            Recurring? 
+            <span class="coming-soon">(Coming Soon)</span>
+          </label>
         </div>
       </div>
     </div>
@@ -79,7 +88,8 @@ watch(() => props.editTransaction, (val) => {
   if (val) {
     transaction.value = {
       ...val,
-      date: formatDateForInput(val.date)
+      date: formatDateForInput(val.date),
+      isRecurring: false // Force to false until feature is implemented
     };
   } else {
     resetForm();
@@ -120,10 +130,14 @@ function resetForm() {
     currency: "EUR",
     date: getToday(),
     description: "",
-    isRecurring: false,
+    isRecurring: false, // Always false until feature is implemented
     type: "spend",
     userId: user.value?.uid || ""
   };
+  // Ensure categories is set if available
+  if (categories.value.length > 0) {
+    transaction.value.category = categories.value[0];
+  }
 }
 
 const handleSubmit = async () => {
@@ -137,6 +151,9 @@ const handleSubmit = async () => {
     showError("Please enter a description", "Missing Description");
     return;
   }
+
+  // Ensure isRecurring is always false until feature is implemented
+  transaction.value.isRecurring = false;
 
   if (props.editTransaction && props.editTransaction.id) {
     // Modifica
@@ -260,9 +277,38 @@ input[type="checkbox"] {
   accent-color: #374151;
 }
 
+/* Disabled checkbox styles */
+input[type="checkbox"]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  accent-color: #9ca3af;
+}
+
+.disabled-checkbox {
+  filter: grayscale(100%);
+}
+
+.disabled-label {
+  opacity: 0.6;
+  cursor: not-allowed;
+  color: #6b7280 !important;
+}
+
+.coming-soon {
+  font-size: 0.75rem;
+  color: #f59e0b;
+  font-weight: 500;
+  font-style: italic;
+}
+
 /* Mobile checkbox adjustments */
 @media (max-width: 767px) {
   input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+  
+  input[type="checkbox"]:disabled {
     width: 20px;
     height: 20px;
   }
@@ -274,6 +320,12 @@ input[type="checkbox"] {
   
   .col-4.flex.items-center label {
     margin-bottom: 0;
+  }
+  
+  .coming-soon {
+    display: block;
+    font-size: 0.7rem;
+    margin-top: 0.25rem;
   }
 }
 
