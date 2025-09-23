@@ -53,6 +53,16 @@
           </select>
         </div>
         
+        <div class="filter-group">
+          <label for="dateFilter">Month/Year:</label>
+          <select id="dateFilter" v-model="selectedMonthYear" class="filter-select">
+            <option value="">All Months</option>
+            <option v-for="monthYear in availableMonthsYears" :key="monthYear" :value="monthYear">
+              {{ monthYear }}
+            </option>
+          </select>
+        </div>
+        
         <div class="filter-actions">
           <button @click="resetFilters" class="reset-filters-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
@@ -195,6 +205,7 @@ const searchText = ref('');
 const selectedCategory = ref('');
 const selectedType = ref('');
 const selectedRecurring = ref('');
+const selectedMonthYear = ref('');
 
 // Computed properties
 const availableCategories = computed(() => {
@@ -206,6 +217,43 @@ const availableCategories = computed(() => {
   });
   return Array.from(categories).sort();
 });
+
+const availableMonthsYears = computed(() => {
+  const monthsYears = new Set();
+  props.transactions.forEach(tx => {
+    if (tx.date) {
+      let d;
+      if (typeof tx.date === 'string') {
+        d = new Date(tx.date);
+      } else if (tx.date.seconds) {
+        d = new Date(tx.date.seconds * 1000);
+      } else {
+        d = new Date(tx.date);
+      }
+      
+      const year = d.getFullYear();
+      const month = d.toLocaleString('it-IT', { month: 'long' });
+      const monthYear = `${month} ${year}`;
+      monthsYears.add(monthYear);
+    }
+  });
+  
+  // Sort by date (most recent first)
+  return Array.from(monthsYears).sort((a, b) => {
+    const dateA = new Date(a.split(' ')[1] + '-' + getMonthNumber(a.split(' ')[0]) + '-01');
+    const dateB = new Date(b.split(' ')[1] + '-' + getMonthNumber(b.split(' ')[0]) + '-01');
+    return dateB - dateA;
+  });
+});
+
+function getMonthNumber(monthName) {
+  const months = {
+    'gennaio': '01', 'febbraio': '02', 'marzo': '03', 'aprile': '04',
+    'maggio': '05', 'giugno': '06', 'luglio': '07', 'agosto': '08',
+    'settembre': '09', 'ottobre': '10', 'novembre': '11', 'dicembre': '12'
+  };
+  return months[monthName.toLowerCase()] || '01';
+}
 
 const filteredTransactions = computed(() => {
   let filtered = props.transactions;
@@ -235,6 +283,28 @@ const filteredTransactions = computed(() => {
     filtered = filtered.filter(tx => Boolean(tx.isRecurring) === isRecurring);
   }
 
+  // Month/Year filter
+  if (selectedMonthYear.value) {
+    filtered = filtered.filter(tx => {
+      if (!tx.date) return false;
+      
+      let d;
+      if (typeof tx.date === 'string') {
+        d = new Date(tx.date);
+      } else if (tx.date.seconds) {
+        d = new Date(tx.date.seconds * 1000);
+      } else {
+        d = new Date(tx.date);
+      }
+      
+      const year = d.getFullYear();
+      const month = d.toLocaleString('it-IT', { month: 'long' });
+      const txMonthYear = `${month} ${year}`;
+      
+      return txMonthYear === selectedMonthYear.value;
+    });
+  }
+
   return filtered;
 });
 
@@ -244,6 +314,7 @@ function resetFilters() {
   selectedCategory.value = '';
   selectedType.value = '';
   selectedRecurring.value = '';
+  selectedMonthYear.value = '';
 }
 
 function emitEdit(tx) {
@@ -471,6 +542,24 @@ function formatDateForCSV(date) {
   .results-counter {
     font-size: 0.8rem;
     padding: 0.4rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.75rem;
+    align-items: end;
+  }
+  
+  .filter-group:nth-child(1) {
+    grid-column: 1 / -1;
+  }
+  
+  .filter-actions {
+    grid-column: 1 / -1;
+    justify-content: center;
   }
 }
 
