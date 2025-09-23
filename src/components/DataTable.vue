@@ -99,7 +99,7 @@
         <tbody>
           <tr v-for="tx in filteredTransactions" :key="tx.id">
             <td>
-              <button class="edit-btn" @click="emitEdit(tx)" title="Modifica">
+              <button class="edit-btn" @click="emitEdit(tx)" title="Edit">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" style="color:#2563eb;vertical-align:middle">
                   <path d="M3 17.25V21h3.75l11.06-11.06-3.75-3.75L3 17.25zm14.71-9.04a1.003 1.003 0 0 0 0-1.42l-2.54-2.54a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                 </svg>
@@ -117,7 +117,7 @@
             <td>{{ tx.type }}</td>
             <td>{{ props.userIdToName[tx.userId] || tx.userId }}</td>
             <td>
-              <button class="delete-btn" @click="confirmDelete(tx.id)" title="Elimina">
+              <button class="delete-btn" @click="confirmDelete(tx.id)" title="Delete">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"
                   style="color:#ff2d2d;vertical-align:middle">
                   <path
@@ -138,12 +138,12 @@
             {{ formatCurrency(tx.amount) }}
           </div>
           <div class="actions">
-            <button class="edit-btn" @click="emitEdit(tx)" title="Modifica">
+            <button class="edit-btn" @click="emitEdit(tx)" title="Edit">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M3 17.25V21h3.75l11.06-11.06-3.75-3.75L3 17.25zm14.71-9.04a1.003 1.003 0 0 0 0-1.42l-2.54-2.54a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
               </svg>
             </button>
-            <button class="delete-btn" @click="confirmDelete(tx.id)" title="Elimina">
+            <button class="delete-btn" @click="confirmDelete(tx.id)" title="Delete">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M3 6h18v2H3V6zm2 3h14l-1.5 12.5c-.1.8-.8 1.5-1.6 1.5H8.1c-.8 0-1.5-.7-1.6-1.5L5 9zm5 2v8h2v-8h-2zm4 0v8h2v-8h-2zm-8 0v8h2v-8H6z"/>
               </svg>
@@ -187,6 +187,7 @@
 import { ref, computed } from 'vue';
 import { db } from '../firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
+import { useModal } from '../composables/useModal';
 
 const props = defineProps({
   transactions: {
@@ -206,6 +207,9 @@ const selectedCategory = ref('');
 const selectedType = ref('');
 const selectedRecurring = ref('');
 const selectedMonthYear = ref('');
+
+// Modal composable
+const { showConfirm, showError, showAlert } = useModal();
 
 // Computed properties
 const availableCategories = computed(() => {
@@ -357,19 +361,33 @@ function formatCurrency(amount) {
 
 
 async function handleDelete(id) {
-  await deleteDoc(doc(db, 'apps', 'budget', 'transactions', id));
-  emit('deleted', id);
+  try {
+    await deleteDoc(doc(db, 'apps', 'budget', 'transactions', id));
+    emit('deleted', id);
+  } catch (error) {
+    console.error('Error deleting transaction:', error);
+    showError('Failed to delete transaction. Please try again.', 'Delete Error');
+  }
 }
 
-function confirmDelete(id) {
-  if (window.confirm('Are you sure you want to delete this transaction?')) {
+async function confirmDelete(id) {
+  const confirmed = await showConfirm(
+    'This action cannot be undone. Are you sure you want to delete this transaction?', 
+    'Delete Transaction',
+    {
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    }
+  );
+  
+  if (confirmed) {
     handleDelete(id);
   }
 }
 
 function exportToCSV() {
   if (!filteredTransactions.value || filteredTransactions.value.length === 0) {
-    alert('No transactions to export');
+    showAlert('No transactions available to export.', 'Export Error');
     return;
   }
 

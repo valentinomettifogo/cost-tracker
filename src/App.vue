@@ -73,6 +73,20 @@
         </div>
       </main>
     </div>
+    
+    <!-- Global Modal -->
+    <Modal
+      :isVisible="modalState.isVisible"
+      :type="modalState.type"
+      :title="modalState.title"
+      :message="modalState.message"
+      :confirmText="modalState.confirmText"
+      :cancelText="modalState.cancelText"
+      :closeOnOverlay="modalState.closeOnOverlay"
+      @confirm="handleConfirm"
+      @cancel="handleCancel"
+      @close="handleClose"
+    />
   </div>
 </template>
 
@@ -81,10 +95,12 @@ import TransactionForm from './components/TransactionForm.vue';
 import DataTable from './components/DataTable.vue';
 import Login from './components/Login.vue';
 import Stats from './components/Stats.vue';
+import Modal from './components/Modal.vue';
 import { ref, onMounted } from 'vue';
 import { db, auth } from './firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { useModal } from './composables/useModal';
 
 
 const transactions = ref([]);
@@ -93,6 +109,9 @@ const user = ref(null);
 const transactionToEdit = ref(null);
 const userIdToName = ref({});
 const isAllowed = ref(false);
+
+// Modal composable
+const { modalState, handleConfirm, handleCancel, handleClose } = useModal();
 
 // Controlla lo stato utente e recupera dati utente da Firestore
 

@@ -44,6 +44,7 @@
 import { ref, onMounted, watch } from "vue";
 import { db } from "../firebase";
 import { collection, addDoc, updateDoc, Timestamp, doc, getDoc } from "firebase/firestore";
+import { useModal } from "../composables/useModal";
 const props = defineProps({
   editTransaction: {
     type: Object,
@@ -59,6 +60,7 @@ function getToday() {
 
 import { useAuth } from "../composables/useAuth";
 const { user } = useAuth();
+const { showError, showSuccess } = useModal();
 
 const categories = ref([]);
 const transaction = ref({
@@ -127,12 +129,12 @@ function resetForm() {
 const handleSubmit = async () => {
   // Validazione aggiuntiva per i campi obbligatori
   if (!transaction.value.amount || transaction.value.amount <= 0) {
-    alert("Please enter a valid amount greater than 0");
+    showError("Please enter a valid amount greater than 0", "Invalid Amount");
     return;
   }
   
   if (!transaction.value.description || transaction.value.description.trim() === "") {
-    alert("Please enter a description");
+    showError("Please enter a description", "Missing Description");
     return;
   }
 
@@ -147,8 +149,10 @@ const handleSubmit = async () => {
       });
       emit('edited', { ...transaction.value, id: props.editTransaction.id });
       resetForm();
+      showSuccess("Transaction updated successfully!", "Success");
     } catch (e) {
       console.error("Error updating document: ", e);
+      showError("Failed to update transaction. Please try again.", "Update Error");
     }
   } else {
     // Nuova
@@ -159,10 +163,11 @@ const handleSubmit = async () => {
         userId: user.value?.uid || "",
         date: Timestamp.fromDate(new Date(transaction.value.date))
       });
-      alert("Transaction saved!");
+      showSuccess("Transaction saved successfully!", "Success");
       resetForm();
     } catch (e) {
       console.error("Error adding document: ", e);
+      showError("Failed to save transaction. Please try again.", "Save Error");
     }
   }
 };
