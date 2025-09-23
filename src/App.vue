@@ -17,16 +17,41 @@
     <div class="">
       <header>
         <nav class="navbar">
-          <div class="nav-brand">
-            <h2>{{ user?.displayName || user?.email || 'User' }}</h2>
+          <div class="nav-top">
+            <div class="nav-brand">
+              <h2>{{ user?.displayName || user?.email || 'User' }}</h2>
+            </div>
+            <div class="nav-right">
+              <button class="logout-btn" @click="logout">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M16 13v-2H7V8l-5 4 5 4v-3z"/>
+                  <path d="M20 3h-9c-1.103 0-2 .897-2 2v4h2V5h9v14h-9v-4H9v4c0 1.103.897 2 2 2h9c1.103 0 2-.897 2-2V5c0-1.103-.897-2-2-2z"/>
+                </svg>
+                Logout
+              </button>
+            </div>
           </div>
           <div class="nav-center">
-            <button :class="{ active: currentView === 'form' }" @click="show('form')">Form</button>
-            <button :class="{ active: currentView === 'datatable' }" @click="show('datatable')">Datatable</button>
-            <button :class="{ active: currentView === 'stats' }" @click="show('stats')">Stats</button>
-          </div>
-          <div class="nav-right">
-            <button class="logout-btn" @click="logout">Logout</button>
+            <button :class="{ active: currentView === 'form' }" @click="show('form')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+              </svg>
+              Add Transaction
+            </button>
+            <button :class="{ active: currentView === 'datatable' }" @click="show('datatable')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M3 3v18h18V3H3zm16 16H5V5h14v14z"/>
+                <path d="M7 7h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM7 15h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/>
+              </svg>
+              Transactions
+            </button>
+            <button :class="{ active: currentView === 'stats' }" @click="show('stats')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M3 3v18h18V3H3zm16 16H5V5h14v14z"/>
+                <path d="M7 12h2v5H7zm4-3h2v8h-2zm4-3h2v11h-2z"/>
+              </svg>
+              Stats
+            </button>
           </div>
         </nav>
       </header>
@@ -178,44 +203,61 @@ function onTransactionEdited(updatedTx) {
 
 <style>
 .navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+
+.nav-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.nav-brand {
+  flex: 3;
+  padding-right: 1rem;
 }
 
 .nav-brand h2 {
   margin: 0;
   color: #1f2937;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
-}
-
-.nav-center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nav-right {
+  flex: 1;
   display: flex;
-  align-items: center;
+  justify-content: flex-end;
+}
+
+.nav-center {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 nav button {
   background: none;
   border: none;
-  font-size: 1rem;
+  font-size: 0.875rem;
   color: #374151;
-  padding: 0.5rem 1.5rem;
+  padding: 0.75rem 1rem;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
 }
 
 nav button:hover {
@@ -233,9 +275,10 @@ nav button.active {
   background: #ef4444 !important;
   color: white !important;
   border-radius: 8px;
-  padding: 0.5rem 1rem !important;
+  padding: 0.5rem 0.875rem !important;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8rem !important;
+  min-width: fit-content;
 }
 
 .logout-btn:hover {
@@ -244,26 +287,71 @@ nav button.active {
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
-/* Responsive */
+.logout-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Mobile responsive */
 @media (max-width: 768px) {
   .navbar {
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
+    padding: 0.75rem;
+  }
+  
+  .nav-top {
+    margin-bottom: 0.75rem;
   }
   
   .nav-brand h2 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
   }
   
   .nav-center {
-    order: 2;
+    gap: 0.25rem;
   }
   
-  .nav-right {
-    order: 3;
+  nav button {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 80px;
+  }
+  
+  nav button svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .logout-btn {
+    font-size: 0.7rem !important;
+    padding: 0.5rem 0.7rem !important;
+  }
+  
+  .logout-btn svg {
+    width: 12px;
+    height: 12px;
   }
 }
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .nav-brand h2 {
+    font-size: 1rem;
+  }
+  
+  nav button {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.6rem;
+    min-width: 70px;
+  }
+  
+  nav button svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
 .denied-container {
   display: flex;
   flex-direction: column;
