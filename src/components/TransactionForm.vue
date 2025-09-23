@@ -3,7 +3,14 @@
     <div class="grid">
       <div class="col-12">
         <label>Amount</label>
-  <input v-model.number="transaction.amount" type="number" step="0.01" required />
+        <input 
+          v-model.number="transaction.amount" 
+          type="number" 
+          step="0.01" 
+          inputmode="decimal"
+          pattern="[0-9]*"
+          required 
+        />
       </div>
       <div class="col-12">
         <label>Category</label>
