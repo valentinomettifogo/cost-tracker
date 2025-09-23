@@ -9,6 +9,65 @@
         Export CSV
       </button>
     </div>
+
+    <!-- Filters Section -->
+    <div class="filters-container">
+      <div class="filters">
+        <div class="filter-group">
+          <label for="searchFilter">Search:</label>
+          <input 
+            id="searchFilter" 
+            type="text" 
+            v-model="searchText" 
+            placeholder="Search in description..."
+            class="filter-input"
+          />
+        </div>
+        
+        <div class="filter-group">
+          <label for="categoryFilter">Category:</label>
+          <select id="categoryFilter" v-model="selectedCategory" class="filter-select">
+            <option value="">All Categories</option>
+            <option v-for="category in availableCategories" :key="category" :value="category">
+              {{ category }}
+            </option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label for="typeFilter">Type:</label>
+          <select id="typeFilter" v-model="selectedType" class="filter-select">
+            <option value="">All Types</option>
+            <option value="income">Income</option>
+            <option value="spend">Spend</option>
+            <option value="savings">Savings</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label for="recurringFilter">Recurring:</label>
+          <select id="recurringFilter" v-model="selectedRecurring" class="filter-select">
+            <option value="">All</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+        
+        <div class="filter-actions">
+          <button @click="resetFilters" class="reset-filters-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+            Reset
+          </button>
+        </div>
+      </div>
+      
+      <!-- Results Counter -->
+      <div class="results-counter">
+        Showing {{ filteredTransactions.length }} of {{ transactions.length }} transactions
+      </div>
+    </div>
     <!-- Desktop Table View -->
     <div class="desktop-table">
       <table>
@@ -28,7 +87,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="tx in transactions" :key="tx.id">
+          <tr v-for="tx in filteredTransactions" :key="tx.id">
             <td>
               <button class="edit-btn" @click="emitEdit(tx)" title="Modifica">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" style="color:#2563eb;vertical-align:middle">
@@ -63,7 +122,7 @@
 
     <!-- Mobile Card View -->
     <div class="mobile-cards">
-      <div v-for="tx in transactions" :key="tx.id" class="transaction-card">
+      <div v-for="tx in filteredTransactions" :key="tx.id" class="transaction-card">
         <div class="card-header">
           <div class="amount" :class="getAmountClass(tx.type)">
             {{ formatCurrency(tx.amount) }}
@@ -115,8 +174,10 @@
 </template>
 
 <script setup>
+import { ref, computed } from 'vue';
 import { db } from '../firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
+
 const props = defineProps({
   transactions: {
     type: Array,
@@ -128,6 +189,62 @@ const props = defineProps({
   }
 });
 const emit = defineEmits(['deleted', 'edit']);
+
+// Filter states
+const searchText = ref('');
+const selectedCategory = ref('');
+const selectedType = ref('');
+const selectedRecurring = ref('');
+
+// Computed properties
+const availableCategories = computed(() => {
+  const categories = new Set();
+  props.transactions.forEach(tx => {
+    if (tx.category) {
+      categories.add(tx.category);
+    }
+  });
+  return Array.from(categories).sort();
+});
+
+const filteredTransactions = computed(() => {
+  let filtered = props.transactions;
+
+  // Search filter
+  if (searchText.value) {
+    const search = searchText.value.toLowerCase();
+    filtered = filtered.filter(tx => 
+      (tx.description && tx.description.toLowerCase().includes(search)) ||
+      (tx.category && tx.category.toLowerCase().includes(search))
+    );
+  }
+
+  // Category filter
+  if (selectedCategory.value) {
+    filtered = filtered.filter(tx => tx.category === selectedCategory.value);
+  }
+
+  // Type filter
+  if (selectedType.value) {
+    filtered = filtered.filter(tx => tx.type === selectedType.value);
+  }
+
+  // Recurring filter
+  if (selectedRecurring.value !== '') {
+    const isRecurring = selectedRecurring.value === 'true';
+    filtered = filtered.filter(tx => Boolean(tx.isRecurring) === isRecurring);
+  }
+
+  return filtered;
+});
+
+// Methods
+function resetFilters() {
+  searchText.value = '';
+  selectedCategory.value = '';
+  selectedType.value = '';
+  selectedRecurring.value = '';
+}
 
 function emitEdit(tx) {
   emit('edit', tx);
@@ -180,7 +297,7 @@ function confirmDelete(id) {
 }
 
 function exportToCSV() {
-  if (!props.transactions || props.transactions.length === 0) {
+  if (!filteredTransactions.value || filteredTransactions.value.length === 0) {
     alert('No transactions to export');
     return;
   }
@@ -188,8 +305,8 @@ function exportToCSV() {
   // Header CSV
   const headers = ['Amount', 'Category', 'Date', 'Description', 'Recurring', 'Type', 'User ID'];
   
-  // Converti le transazioni in righe CSV
-  const csvRows = props.transactions.map(tx => {
+  // Converti le transazioni filtrate in righe CSV
+  const csvRows = filteredTransactions.value.map(tx => {
     return [
       tx.amount || 0,
       `"${(tx.category || '').replace(/"/g, '""')}"`, // Escape quotes
@@ -211,7 +328,7 @@ function exportToCSV() {
   if (link.download !== undefined) {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `transactions_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `transactions_filtered_${new Date().toISOString().slice(0, 10)}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -234,6 +351,150 @@ function formatDateForCSV(date) {
 </script>
 
 <style scoped>
+/* Filters Styles */
+.filters-container {
+  margin-bottom: 1.5rem;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  align-items: end;
+  flex-wrap: wrap;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+  margin-bottom: 0.75rem;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 120px;
+}
+
+.filter-group label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.filter-input,
+.filter-select {
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: white;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-input {
+  min-width: 200px;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: end;
+}
+
+.reset-filters-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: background-color 0.2s ease;
+  height: fit-content;
+}
+
+.reset-filters-btn:hover {
+  background: #4b5563;
+}
+
+.reset-filters-btn svg {
+  flex-shrink: 0;
+}
+
+.results-counter {
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem;
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+/* Mobile adjustments for filters */
+@media (max-width: 767px) {
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+  
+  .filter-group {
+    min-width: auto;
+  }
+  
+  .filter-input {
+    min-width: auto;
+  }
+  
+  .filter-actions {
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .reset-filters-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .results-counter {
+    font-size: 0.8rem;
+    padding: 0.4rem;
+  }
+}
+
+@media (max-width: 479px) {
+  .filters {
+    padding: 0.5rem;
+  }
+  
+  .filter-input,
+  .filter-select {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+  }
+  
+  .filter-group label {
+    font-size: 0.8rem;
+  }
+  
+  .reset-filters-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+  }
+}
+
 /* Mobile-first approach */
 .mobile-cards {
   display: block;
