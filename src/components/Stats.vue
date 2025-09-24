@@ -147,8 +147,8 @@ const months = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-// Formatter per valuta con punto come decimale e virgola come migliaia (formato US)
-const currencyFormatter = new Intl.NumberFormat('en-US', {
+// Formatter per valuta con virgola come decimale e punto come migliaia (formato IT/EU)
+const currencyFormatter = new Intl.NumberFormat('it-IT', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2
 });
@@ -370,7 +370,7 @@ const createBarChart = () => {
         tooltip: {
           callbacks: {
             label: function(context) {
-              return context.dataset.label + ': €' + context.parsed.y.toFixed(2).replace('.', ',');
+              return context.dataset.label + ': €' + currencyFormatter.format(context.parsed.y);
             }
           },
           titleFont: {
@@ -418,7 +418,7 @@ const createPieChart = () => {
               const value = context.parsed;
               const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
               const percentage = ((value / total) * 100).toFixed(1);
-              return context.label + ': €' + value.toFixed(2).replace('.', ',') + ' (' + percentage + '%)';
+              return context.label + ': €' + currencyFormatter.format(value) + ' (' + percentage + '%)';
             }
           },
           titleFont: {
