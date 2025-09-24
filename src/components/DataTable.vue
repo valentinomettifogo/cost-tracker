@@ -163,7 +163,7 @@
           <tr v-for="tx in filteredTransactions" :key="tx.id">
             <td>
               <button class="edit-btn" @click="emitEdit(tx)" title="Edit">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" style="color:#2563eb;vertical-align:middle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" style="vertical-align:middle">
                   <path d="M3 17.25V21h3.75l11.06-11.06-3.75-3.75L3 17.25zm14.71-9.04a1.003 1.003 0 0 0 0-1.42l-2.54-2.54a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                 </svg>
               </button>
@@ -202,6 +202,7 @@
               {{ formatCurrency(tx.amount) }}
             </div>
             <div class="type-badge" :class="`type-${tx.type}`">{{ tx.type }}</div>
+            <div class="category">{{ tx.category }}</div>
           </div>
           <div class="actions">
             <button class="edit-btn" @click="emitEdit(tx)" title="Edit">
@@ -217,13 +218,8 @@
           </div>
         </div>
         <div class="card-body">
-          <div class="field">
-            <span class="label">Category:</span>
-            <span class="value">{{ tx.category }}</span>
-          </div>
-          <div class="field" v-if="tx.description">
-            <span class="label">Description:</span>
-            <span class="value">{{ tx.description }}</span>
+          <div class="description-field" v-if="tx.description">
+            {{ tx.description }}
           </div>
           <div class="field" v-if="tx.isRecurring">
             <span class="label">Recurring:</span>
@@ -806,6 +802,12 @@ function formatDateForCSV(date) {
   gap: 0.5rem;
 }
 
+.amount-and-type .category {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
 .card-header .amount {
   font-size: 1.125rem;
   font-weight: bold;
@@ -821,6 +823,16 @@ function formatDateForCSV(date) {
   justify-content: space-between;
   margin-bottom: 0.25rem;
   padding: 0.125rem 0;
+}
+
+.description-field {
+  background: #f9fafb;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
 }
 
 .field-row {
@@ -904,14 +916,14 @@ function formatDateForCSV(date) {
 .edit-btn {
   background: none;
   border: none;
-  color: #2563eb;
+  color: #6b7280;
   font-size: 1rem;
   cursor: pointer;
   padding: 0.125rem 0.25rem;
   transition: color 0.2s;
 }
 .edit-btn:hover {
-  color: #1d4ed8;
+  color: #4b5563;
 }
 .table-header {
   display: flex;
