@@ -408,7 +408,7 @@ function getAmountClass(type) {
 
 function formatCurrency(amount) {
   if (typeof amount !== 'number') amount = Number(amount) || 0;
-  return amount.toLocaleString('en-US', { style: 'currency', currency: 'EUR' });
+  return amount.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
 }
 
 
