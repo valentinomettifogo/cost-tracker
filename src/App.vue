@@ -187,7 +187,17 @@ async function fetchTransactions() {
   transactions.value = filteredTransactions.sort((a, b) => {
     const dateA = a.date?.seconds ? a.date.seconds : new Date(a.date).getTime() / 1000;
     const dateB = b.date?.seconds ? b.date.seconds : new Date(b.date).getTime() / 1000;
-    return dateB - dateA;
+    
+    // Ordinamento primario per data (decrescente)
+    const dateDiff = dateB - dateA;
+    if (dateDiff !== 0) {
+      return dateDiff;
+    }
+    
+    // Ordinamento secondario per createdAt (decrescente) se le date sono uguali
+    const createdAtA = a.createdAt?.seconds ? a.createdAt.seconds : 0;
+    const createdAtB = b.createdAt?.seconds ? b.createdAt.seconds : 0;
+    return createdAtB - createdAtA;
   });
 }
 

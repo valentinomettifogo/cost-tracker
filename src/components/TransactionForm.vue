@@ -1,9 +1,10 @@
 <template>
   <form @submit.prevent="handleSubmit">
-    <div class="grid">
-      <div class="col-12">
-        <label>Amount</label>
+    <div class="form-fields">
+      <div class="field-group">
+        <label for="amount">Amount:</label>
         <input 
+          id="amount"
           v-model="transaction.amount" 
           type="text" 
           inputmode="decimal"
@@ -13,30 +14,31 @@
           @blur="formatAmountDisplay"
         />
       </div>
-      <div class="col-12">
-        <label>Category</label>
-        <select v-model="transaction.category" required>
+      <div class="field-group">
+        <label for="category">Category:</label>
+        <select id="category" v-model="transaction.category" required>
           <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
         </select>
       </div>
-      <div class="col-12">
-        <label>Description</label>
-        <input v-model="transaction.description" type="text" required />
+      <div class="field-group">
+        <label for="description">Description:</label>
+        <input id="description" v-model="transaction.description" type="text" required />
       </div>
-      <div class="col-12">
-        <label>Date</label>
-        <input v-model="transaction.date" type="date" required />
+      <div class="field-group">
+        <label for="date">Date:</label>
+        <input id="date" v-model="transaction.date" type="date" required />
       </div>
-      <div class="col-8">
-        <label>Type</label>
-        <select v-model="transaction.type">
+      <div class="field-group">
+        <label for="type">Type:</label>
+        <select id="type" v-model="transaction.type">
           <option value="spend">Spend</option>
           <option value="income">Income</option>
           <option value="savings">Savings</option>
         </select>
       </div>
-      <div class="col-4">
-        <div class="flex items-center" style="height: 100%; padding-top: 1.5rem;">
+      <div class="field-group checkbox-group">
+        <label for="recurring">Recurring:</label>
+        <div class="checkbox-wrapper">
           <input 
             v-model="transaction.isRecurring" 
             type="checkbox" 
@@ -44,10 +46,7 @@
             disabled 
             class="disabled-checkbox"
           />
-          <label for="recurring" class="mr-0 disabled-label" style="margin-bottom: 0;">
-            Recurring? 
-            <span class="coming-soon">(Coming Soon)</span>
-          </label>
+          <span class="coming-soon">(Coming Soon)</span>
         </div>
       </div>
     </div>
@@ -212,7 +211,8 @@ const handleSubmit = async () => {
         amount: numericAmount, // Use numeric amount for database
         description: transaction.value.description.trim(), // Removes extra spaces
         date: Timestamp.fromDate(new Date(transaction.value.date)),
-        userId: user.value?.uid || ""
+        userId: user.value?.uid || "",
+        lastModified: Timestamp.now()
       });
       emit('edited', { ...transaction.value, amount: numericAmount, id: props.editTransaction.id });
       resetForm();
@@ -224,12 +224,15 @@ const handleSubmit = async () => {
   } else {
     // New
     try {
+      const now = Timestamp.now();
       await addDoc(collection(db, "apps", "budget", "transactions"), {
         ...transaction.value,
         amount: numericAmount, // Use numeric amount for database
         description: transaction.value.description.trim(), // Removes extra spaces
         userId: user.value?.uid || "",
-        date: Timestamp.fromDate(new Date(transaction.value.date))
+        date: Timestamp.fromDate(new Date(transaction.value.date)),
+        createdAt: now,
+        lastModified: now
       });
       showSuccess("Transaction saved successfully!", "Success");
       resetForm();
@@ -256,7 +259,7 @@ form {
 /* Desktop styles */
 @media (min-width: 768px) {
   form {
-    width: 60%;
+    width: 80%;
     margin: 2rem auto;
     padding: 2rem;
   }
@@ -264,66 +267,139 @@ form {
 
 @media (min-width: 1024px) {
   form {
-    width: 40%;
+    width: 70%;
   }
 }
 
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-label {
-  font-weight: 500;
+.field-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.field-group label {
+  font-weight: 600;
   color: #374151;
   font-size: 0.875rem;
-  margin-bottom: 0.25rem;
-  display: block;
+  margin: 0;
+  min-width: 100px;
+  white-space: nowrap;
 }
 
-input,
-select,
-textarea {
+.checkbox-group {
+  align-items: flex-start;
+}
+
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.field-group input,
+.field-group select,
+.field-group textarea {
   padding: 0.75rem;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  background: #ffffff;
-  font-size: 1rem;
+  background: white;
+  font-size: 0.875rem;
   color: #374151;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   box-sizing: border-box;
-  width: 100%;
+  flex: 1;
+  height: 48px; /* Altezza uniforme per tutti i campi */
+  -webkit-appearance: none; /* Rimuove stili nativi su Safari */
+  -moz-appearance: none; /* Rimuove stili nativi su Firefox */
+  appearance: none; /* Rimuove stili nativi */
+}
+
+/* Fix specifico per input date */
+.field-group input[type="date"] {
+  padding: 0.75rem;
+  height: 48px;
+  line-height: normal;
+  font-family: inherit;
+}
+
+/* Fix per textarea che deve essere più alta */
+.field-group textarea {
+  height: auto;
+  min-height: 80px;
+  resize: vertical;
 }
 
 /* Mobile improvements */
 @media (max-width: 767px) {
-  input,
-  select,
-  textarea {
+  form {
+    margin: 0.5rem;
     padding: 1rem;
-    font-size: 16px; /* Previene lo zoom su iOS */
-    border-radius: 8px;
   }
   
-  label {
-    font-size: 0.9rem;
+  /* Layout mobile come i filtri: labels a sinistra, input a destra */
+  .field-group {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .field-group label {
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    color: #374151;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    margin: 0;
+  }
+  
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .field-group input,
+  .field-group select,
+  .field-group textarea {
+    padding: 0.75rem;
+    font-size: 16px; /* Previene lo zoom su iOS */
+    border-radius: 6px;
+    height: 48px; /* Altezza consistente con i filtri */
+    width: 100%;
+  }
+  
+  /* Fix specifico per input date su mobile */
+  .field-group input[type="date"] {
+    padding: 0.75rem;
+    height: 48px;
+    font-size: 16px;
+  }
+  
+  /* Fix per textarea su mobile */
+  .field-group textarea {
+    height: auto;
+    min-height: 80px;
+    padding: 0.75rem;
   }
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+.field-group input:focus,
+.field-group select:focus,
+.field-group textarea:focus {
   outline: none;
-  border-color: #6b7280;
-  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.1);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   margin-right: 0.5rem;
   accent-color: #374151;
 }
@@ -355,13 +431,13 @@ input[type="checkbox"]:disabled {
 /* Mobile checkbox adjustments */
 @media (max-width: 767px) {
   input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
   }
   
   input[type="checkbox"]:disabled {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
   }
   
   .col-4.flex.items-center {
@@ -380,23 +456,26 @@ input[type="checkbox"]:disabled {
   }
 }
 
-textarea {
-  resize: vertical;
-  min-height: 80px;
-  font-family: inherit;
+/* Selects styling per uniformità */
+.field-group select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23374151' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem; /* Spazio per la freccia */
 }
 
 button {
-  padding: 0.875rem 1.5rem;
+  padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 6px;
   background: #374151;
   color: #ffffff;
   font-weight: 500;
-  font-size: 1rem;
+  font-size: 0.875rem;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  margin-top: 0.5rem;
+  transition: all 0.2s ease;
+  margin-top: 1rem;
   width: 100%;
   box-sizing: border-box;
 }

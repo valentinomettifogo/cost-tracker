@@ -12,7 +12,8 @@
 
     <!-- Filters Section -->
     <div class="filters-container">
-      <div class="filters">
+      <!-- Desktop Filters -->
+      <div class="filters desktop-filters">
         <div class="filter-group">
           <label for="searchFilter">Search:</label>
           <input 
@@ -72,9 +73,71 @@
           </button>
         </div>
       </div>
+
+      <!-- Mobile Filters -->
+      <div class="mobile-filters">
+        <!-- Search bar senza label -->
+        <div class="search-section">
+          <input 
+            id="searchFilterMobile" 
+            type="text" 
+            v-model="searchText" 
+            placeholder="Search in description or category..."
+            class="filter-input search-input"
+          />
+        </div>
+        
+        <!-- Filtri con layout labels/boxes -->
+        <div class="filters-layout">
+          <div class="labels-column">
+            <div class="filter-label">Category:</div>
+            <div class="filter-label">Type:</div>
+            <div class="filter-label">Recurring:</div>
+            <div class="filter-label">Month/Year:</div>
+          </div>
+          
+          <div class="boxes-column">
+            <select v-model="selectedCategory" class="filter-select uniform-size">
+              <option value="">All Categories</option>
+              <option v-for="category in availableCategories" :key="category" :value="category">
+                {{ category }}
+              </option>
+            </select>
+            
+            <select v-model="selectedType" class="filter-select uniform-size">
+              <option value="">All Types</option>
+              <option value="income">Income</option>
+              <option value="spend">Spend</option>
+              <option value="savings">Savings</option>
+            </select>
+            
+            <select v-model="selectedRecurring" class="filter-select uniform-size">
+              <option value="">All</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+            
+            <select v-model="selectedMonthYear" class="filter-select uniform-size">
+              <option value="">All Months</option>
+              <option v-for="monthYear in availableMonthsYears" :key="monthYear" :value="monthYear">
+                {{ monthYear }}
+              </option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="filter-actions">
+          <button @click="resetFilters" class="reset-filters-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+            Reset
+          </button>
+        </div>
+      </div>
       
       <!-- Results Counter -->
-      <div class="results-counter">
+      <div class="results-counte mt-3">
         Showing {{ filteredTransactions.length }} of {{ transactions.length }} transactions
       </div>
     </div>
@@ -134,8 +197,11 @@
     <div class="mobile-cards">
       <div v-for="tx in filteredTransactions" :key="tx.id" class="transaction-card">
         <div class="card-header">
-          <div class="amount" :class="getAmountClass(tx.type)">
-            {{ formatCurrency(tx.amount) }}
+          <div class="amount-and-type">
+            <div class="amount" :class="getAmountClass(tx.type)">
+              {{ formatCurrency(tx.amount) }}
+            </div>
+            <div class="type-badge" :class="`type-${tx.type}`">{{ tx.type }}</div>
           </div>
           <div class="actions">
             <button class="edit-btn" @click="emitEdit(tx)" title="Edit">
@@ -155,28 +221,18 @@
             <span class="label">Category:</span>
             <span class="value">{{ tx.category }}</span>
           </div>
-          <div class="field">
-            <span class="label">Date:</span>
-            <span class="value">{{ formatDate(tx.date) }}</span>
-          </div>
           <div class="field" v-if="tx.description">
             <span class="label">Description:</span>
             <span class="value">{{ tx.description }}</span>
           </div>
-          <div class="field-row">
-            <div class="field">
-              <span class="label">Type:</span>
-              <span class="value type-badge" :class="`type-${tx.type}`">{{ tx.type }}</span>
-            </div>
-            <div class="field" v-if="tx.isRecurring">
-              <span class="label">Recurring:</span>
-              <span class="value recurring-badge">Yes</span>
-            </div>
+          <div class="field" v-if="tx.isRecurring">
+            <span class="label">Recurring:</span>
+            <span class="value recurring-badge">Yes</span>
           </div>
-          <div class="field" v-if="props.userIdToName[tx.userId]">
-            <span class="label">User:</span>
-            <span class="value">{{ props.userIdToName[tx.userId] || tx.userId }}</span>
-          </div>
+        </div>
+        <div class="card-footer">
+          <div class="date">{{ formatDate(tx.date) }}</div>
+          <div class="user" v-if="props.userIdToName[tx.userId]">{{ props.userIdToName[tx.userId] || tx.userId }}</div>
         </div>
       </div>
     </div>
@@ -533,33 +589,116 @@ function formatDateForCSV(date) {
 /* Mobile adjustments for filters */
 @media (max-width: 767px) {
   .filters {
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  /* Search field sempre su una riga intera */
+  .filter-group:first-child {
+    grid-column: 1;
+  }
+  
+  /* Filtri select su 2 colonne */
+  .filter-group:nth-child(2),
+  .filter-group:nth-child(3) {
+    grid-column: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
+  }
+  
+  .filter-group:nth-child(4),
+  .filter-group:nth-child(5) {
+    grid-column: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+  
+  /* Prevent iOS zoom on input focus */
+  .filter-input {
+    min-width: auto;
+    font-size: 16px !important; /* Prevents zoom on iOS */
     padding: 0.75rem;
   }
   
-  .filter-group {
-    min-width: auto;
-  }
-  
-  .filter-input {
-    min-width: auto;
+  .filter-select {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    padding: 0.75rem;
   }
   
   .filter-actions {
     align-items: center;
     justify-content: center;
+    margin-top: 0.5rem;
   }
   
   .reset-filters-btn {
     width: 100%;
     justify-content: center;
+    padding: 0.75rem 1rem;
   }
   
   .results-counter {
-    font-size: 0.8rem;
-    padding: 0.4rem;
+    font-size: 0.9rem;
+    padding: 0.6rem;
+  }
+}
+
+/* Mobile filters layout */
+@media (max-width: 767px) {
+  .search-section {
+    margin-bottom: 1rem;
+  }
+  
+  .search-input {
+    width: 100%;
+    font-size: 16px !important;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+  }
+  
+  .filters-layout {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+  
+  .labels-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 0.1rem; /* Allineamento con le select */
+  }
+  
+  .filter-label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.9rem;
+    height: 48px; /* Stessa altezza delle select */
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+  }
+  
+  .boxes-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .uniform-size {
+    height: 48px !important;
+    width: 100%;
+    font-size: 16px !important;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background: white;
   }
 }
 
@@ -611,6 +750,18 @@ function formatDateForCSV(date) {
   display: none;
 }
 
+.mobile-filters {
+  display: block;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.desktop-filters {
+  display: none;
+}
+
 /* Desktop styles */
 @media (min-width: 768px) {
   .mobile-cards {
@@ -620,15 +771,23 @@ function formatDateForCSV(date) {
   .desktop-table {
     display: block;
   }
+  
+  .mobile-filters {
+    display: none;
+  }
+  
+  .desktop-filters {
+    display: flex;
+  }
 }
 
 /* Mobile Card Styles */
 .transaction-card {
   background: white;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  padding: 0.75rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
@@ -636,47 +795,73 @@ function formatDateForCSV(date) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.375rem;
   border-bottom: 1px solid #f3f4f6;
 }
 
+.amount-and-type {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .card-header .amount {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: bold;
 }
 
 .actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .card-body .field {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
-  padding: 0.25rem 0;
+  margin-bottom: 0.25rem;
+  padding: 0.125rem 0;
 }
 
 .field-row {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .field-row .field {
   flex: 1;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  padding-top: 0.375rem;
+  border-top: 1px solid #f3f4f6;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.card-footer .date {
+  font-weight: 500;
+}
+
+.card-footer .user {
+  font-weight: 500;
+  color: #374151;
 }
 
 .label {
   font-weight: 500;
   color: #6b7280;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .value {
   color: #374151;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .type-badge {
@@ -720,9 +905,9 @@ function formatDateForCSV(date) {
   background: none;
   border: none;
   color: #2563eb;
-  font-size: 1.2rem;
+  font-size: 1rem;
   cursor: pointer;
-  padding: 0.25rem 0.5rem;
+  padding: 0.125rem 0.25rem;
   transition: color 0.2s;
 }
 .edit-btn:hover {
