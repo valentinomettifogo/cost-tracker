@@ -228,7 +228,7 @@ const totalSavings = computed(() => {
 });
 
 const netBalance = computed(() => {
-  return totalIncome.value - totalCosts.value;
+  return totalIncome.value - totalCosts.value - totalSavings.value;
 });
 
 // Chart data computeds
