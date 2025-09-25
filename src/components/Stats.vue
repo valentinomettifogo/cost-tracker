@@ -2,8 +2,8 @@
   <div class="stats-container">
     <div class="stats-header">
       
-      <!-- Filtri -->
-      <div class="filters">
+      <!-- Desktop Filters -->
+      <div class="filters desktop-filters">
         <div class="filter-group">
           <label for="yearFilter">Year:</label>
           <select id="yearFilter" v-model="selectedYear" @change="updateCharts">
@@ -16,6 +16,7 @@
           <label for="monthFilter">Month:</label>
           <select id="monthFilter" v-model="selectedMonth" @change="updateCharts">
             <option value="all">All Months</option>
+            <option value="ytd">YTD (Jan-Current)</option>
             <option v-for="(month, index) in months" :key="index" :value="index + 1">{{ month }}</option>
           </select>
         </div>
@@ -29,6 +30,45 @@
         </div>
         
         <button @click="resetFilters" class="reset-btn">Reset Filters</button>
+      </div>
+
+      <!-- Mobile Filters -->
+      <div class="mobile-filters">
+        <!-- Filtri con layout labels/boxes -->
+        <div class="filters-layout">
+          <div class="labels-column">
+            <div class="filter-label">Year:</div>
+            <div class="filter-label">Month:</div>
+            <div class="filter-label">Category:</div>
+          </div>
+          
+          <div class="boxes-column">
+            <select v-model="selectedYear" @change="updateCharts" class="filter-select uniform-size">
+              <option value="all">All Years</option>
+              <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
+            </select>
+            
+            <select v-model="selectedMonth" @change="updateCharts" class="filter-select uniform-size">
+              <option value="all">All Months</option>
+              <option value="ytd">YTD (Jan-Current)</option>
+              <option v-for="(month, index) in months" :key="index" :value="index + 1">{{ month }}</option>
+            </select>
+            
+            <select v-model="selectedCategory" @change="updateCharts" class="filter-select uniform-size">
+              <option value="all">All Categories</option>
+              <option v-for="category in availableCategories" :key="category" :value="category">{{ category }}</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="filter-actions">
+          <button @click="resetFilters" class="reset-filters-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+            Reset
+          </button>
+        </div>
       </div>
     </div>
 
@@ -138,7 +178,7 @@ let pieChartInstance = null;
 
 // Filtri
 const selectedYear = ref('all');
-const selectedMonth = ref('all');
+const selectedMonth = ref('ytd');
 const selectedCategory = ref('all');
 
 // Dati per i selettori
@@ -146,6 +186,11 @@ const months = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
+
+// Get current month for YTD filtering
+function getCurrentMonth() {
+  return new Date().getMonth() + 1; // 1-based month
+}
 
 // Formatter per valuta con virgola come decimale e punto come migliaia (formato IT/EU)
 const currencyFormatter = new Intl.NumberFormat('it-IT', {
@@ -201,7 +246,18 @@ const filteredTransactions = computed(() => {
     const month = date.getMonth() + 1;
     
     const yearMatch = selectedYear.value === 'all' || year === parseInt(selectedYear.value);
-    const monthMatch = selectedMonth.value === 'all' || month === parseInt(selectedMonth.value);
+    
+    let monthMatch;
+    if (selectedMonth.value === 'all') {
+      monthMatch = true;
+    } else if (selectedMonth.value === 'ytd') {
+      // YTD: from January to current month (inclusive)
+      const currentMonth = getCurrentMonth();
+      monthMatch = month >= 1 && month <= currentMonth;
+    } else {
+      monthMatch = month === parseInt(selectedMonth.value);
+    }
+    
     const categoryMatch = selectedCategory.value === 'all' || tx.category === selectedCategory.value;
         
     return yearMatch && monthMatch && categoryMatch;
@@ -317,7 +373,7 @@ const pieChartData = computed(() => {
 // Methods
 const resetFilters = () => {
   selectedYear.value = 'all';
-  selectedMonth.value = 'all';
+  selectedMonth.value = 'ytd';
   selectedCategory.value = 'all';
   updateCharts();
 };
@@ -768,19 +824,121 @@ watch(() => props.transactions, () => {
   }
 }
 
+/* Mobile-first approach for filters */
+.mobile-filters {
+  display: block;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.desktop-filters {
+  display: none;
+}
+
+/* Desktop styles */
+@media (min-width: 768px) {
+  .mobile-filters {
+    display: none;
+  }
+  
+  .desktop-filters {
+    display: flex;
+  }
+}
+
+/* Mobile filters layout */
+@media (max-width: 767px) {
+  .filters-layout {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+  
+  .labels-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding-top: 0.1rem; /* Allineamento con le select */
+  }
+  
+  .filter-label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.85rem;
+    height: 44px; /* Slightly smaller for 3 filters */
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+  }
+  
+  .boxes-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+  
+  .uniform-size {
+    height: 44px !important;
+    width: 100%;
+    font-size: 15px !important;
+    padding: 0.6rem;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background: white;
+  }
+  
+  .filter-actions {
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .reset-filters-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    width: auto;
+    min-width: 120px;
+    background: #6b7280;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: background-color 0.2s ease;
+  }
+  
+  .reset-filters-btn:hover {
+    background: #4b5563;
+  }
+  
+  .reset-filters-btn svg {
+    flex-shrink: 0;
+  }
+}
+
 /* Mobile specific optimizations */
 @media (max-width: 479px) {
-  .filters {
+  .mobile-filters {
     padding: 0.75rem;
   }
   
-  .filter-group {
-    min-width: 80px;
+  .filter-label {
+    font-size: 0.8rem;
   }
   
-  .filter-group select {
-    font-size: 0.8rem;
-    padding: 0.4rem;
+  .uniform-size {
+    font-size: 14px !important;
+    padding: 0.5rem;
+    height: 40px !important;
   }
   
   .summary-cards {

@@ -39,14 +39,20 @@
       <div class="field-group checkbox-group">
         <label for="recurring">Recurring:</label>
         <div class="checkbox-wrapper">
-          <input 
-            v-model="transaction.isRecurring" 
-            type="checkbox" 
-            id="recurring" 
-            disabled 
-            class="disabled-checkbox"
-          />
-          <span class="coming-soon">(Coming Soon)</span>
+          <label class="checkbox-label" for="recurring">
+            <input 
+              v-model="transaction.isRecurring" 
+              type="checkbox" 
+              id="recurring"
+            />
+            <span class="checkbox-text">Enable recurring</span>
+            <span class="recurring-info" v-if="!transaction.isRecurring">
+              (Monthly until end of year)
+            </span>
+            <span class="recurring-count" v-if="transaction.isRecurring && recurringMonthsCount > 0">
+              - Will create {{ recurringMonthsCount }} transactions
+            </span>
+          </label>
         </div>
       </div>
     </div>
@@ -57,7 +63,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import { db } from "../firebase";
 import { collection, addDoc, updateDoc, Timestamp, doc, getDoc } from "firebase/firestore";
 import { useModal } from "../composables/useModal";
@@ -90,13 +96,32 @@ const transaction = ref({
   userId: user.value?.uid || ""
 });
 
+// Computed property to show how many recurring transactions will be created
+const recurringMonthsCount = computed(() => {
+  if (!transaction.value.isRecurring || !transaction.value.date) return 0;
+  
+  const selectedDate = new Date(transaction.value.date);
+  const currentYear = selectedDate.getFullYear();
+  const endOfYear = new Date(currentYear, 11, 31);
+  
+  let count = 0;
+  let currentDate = new Date(selectedDate);
+  
+  while (currentDate <= endOfYear) {
+    count++;
+    currentDate.setMonth(currentDate.getMonth() + 1);
+  }
+  
+  return count;
+});
+
 // Precompila il form se editTransaction cambia
 watch(() => props.editTransaction, (val) => {
   if (val) {
     transaction.value = {
       ...val,
       date: formatDateForInput(val.date),
-      isRecurring: false // Force to false until feature is implemented
+      isRecurring: val.isRecurring || false
     };
   } else {
     resetForm();
@@ -137,7 +162,7 @@ function resetForm() {
     currency: "EUR",
     date: getToday(),
     description: "",
-    isRecurring: false, // Always false until feature is implemented
+    isRecurring: false,
     type: "spend",
     userId: user.value?.uid || ""
   };
@@ -187,6 +212,47 @@ function getNumericAmount() {
   return isNaN(numericValue) ? 0 : numericValue;
 }
 
+// Generate recurring transactions from selected date until end of year
+function generateRecurringTransactions(baseTransaction, startDate) {
+  const transactions = [];
+  const start = new Date(startDate);
+  const currentYear = start.getFullYear();
+  const endOfYear = new Date(currentYear, 11, 31); // December 31st of the same year
+  
+  // Generate unique recurring group ID
+  const recurringGroupId = `recurring_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  let currentDate = new Date(start);
+  
+  while (currentDate <= endOfYear) {
+    const transactionData = {
+      ...baseTransaction,
+      date: Timestamp.fromDate(new Date(currentDate)),
+      isRecurring: true,
+      recurringGroupId: recurringGroupId,
+      recurringOriginalDate: Timestamp.fromDate(start),
+      createdAt: Timestamp.now(),
+      lastModified: Timestamp.now()
+    };
+    
+    transactions.push(transactionData);
+    
+    // Move to next month, same day
+    currentDate.setMonth(currentDate.getMonth() + 1);
+  }
+  
+  return transactions;
+}
+
+// Save multiple recurring transactions
+async function saveRecurringTransactions(transactions) {
+  const promises = transactions.map(txData => 
+    addDoc(collection(db, "apps", "budget", "transactions"), txData)
+  );
+  
+  await Promise.all(promises);
+}
+
 const handleSubmit = async () => {
   // Additional validation for required fields
   const numericAmount = getNumericAmount();
@@ -200,21 +266,39 @@ const handleSubmit = async () => {
     return;
   }
 
-  // Ensure isRecurring is always false until feature is implemented
-  transaction.value.isRecurring = false;
-
   if (props.editTransaction && props.editTransaction.id) {
-    // Edit
+    // Edit existing transaction
     try {
+      // Check if the original transaction was recurring
+      const isOriginallyRecurring = props.editTransaction.isRecurring && props.editTransaction.recurringGroupId;
+      
+      if (isOriginallyRecurring) {
+        // For now, just update the single transaction (we can enhance this later)
+        showError(
+          "Editing recurring transactions will only modify this single transaction. Full recurring series editing will be available in a future update.", 
+          "Recurring Transaction Edit"
+        );
+      }
+      
       await updateDoc(doc(db, "apps", "budget", "transactions", props.editTransaction.id), {
         ...transaction.value,
-        amount: numericAmount, // Use numeric amount for database
-        description: transaction.value.description.trim(), // Removes extra spaces
+        amount: numericAmount,
+        description: transaction.value.description.trim(),
         date: Timestamp.fromDate(new Date(transaction.value.date)),
         userId: user.value?.uid || "",
-        lastModified: Timestamp.now()
+        lastModified: Timestamp.now(),
+        // Preserve original recurring metadata if it existed
+        ...(isOriginallyRecurring && {
+          recurringGroupId: props.editTransaction.recurringGroupId,
+          recurringOriginalDate: props.editTransaction.recurringOriginalDate
+        })
       });
-      emit('edited', { ...transaction.value, amount: numericAmount, id: props.editTransaction.id });
+      
+      emit('edited', { 
+        ...transaction.value, 
+        amount: numericAmount, 
+        id: props.editTransaction.id 
+      });
       resetForm();
       showSuccess("Transaction updated successfully!", "Success");
     } catch (e) {
@@ -222,19 +306,45 @@ const handleSubmit = async () => {
       showError("Failed to update transaction. Please try again.", "Update Error");
     }
   } else {
-    // New
+    // New transaction
     try {
-      const now = Timestamp.now();
-      await addDoc(collection(db, "apps", "budget", "transactions"), {
-        ...transaction.value,
-        amount: numericAmount, // Use numeric amount for database
-        description: transaction.value.description.trim(), // Removes extra spaces
-        userId: user.value?.uid || "",
-        date: Timestamp.fromDate(new Date(transaction.value.date)),
-        createdAt: now,
-        lastModified: now
-      });
-      showSuccess("Transaction saved successfully!", "Success");
+      if (transaction.value.isRecurring) {
+        // Handle recurring transactions
+        const baseTransaction = {
+          ...transaction.value,
+          amount: numericAmount,
+          description: transaction.value.description.trim(),
+          userId: user.value?.uid || ""
+        };
+        
+        const recurringTransactions = generateRecurringTransactions(
+          baseTransaction, 
+          transaction.value.date
+        );
+        
+        await saveRecurringTransactions(recurringTransactions);
+        
+        showSuccess(
+          `${recurringTransactions.length} recurring transactions created successfully until end of year!`, 
+          "Recurring Transactions Created"
+        );
+      } else {
+        // Handle single transaction
+        const now = Timestamp.now();
+        await addDoc(collection(db, "apps", "budget", "transactions"), {
+          ...transaction.value,
+          amount: numericAmount,
+          description: transaction.value.description.trim(),
+          userId: user.value?.uid || "",
+          date: Timestamp.fromDate(new Date(transaction.value.date)),
+          isRecurring: false,
+          createdAt: now,
+          lastModified: now
+        });
+        
+        showSuccess("Transaction saved successfully!", "Success");
+      }
+      
       resetForm();
     } catch (e) {
       console.error("Error adding document: ", e);
@@ -299,7 +409,22 @@ form {
 .checkbox-wrapper {
   display: flex;
   align-items: center;
+  flex: 1;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  flex-wrap: wrap;
+}
+
+.checkbox-text {
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
 }
 
 .field-group input,
@@ -359,9 +484,20 @@ form {
   }
   
   .checkbox-group {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .checkbox-wrapper {
     display: flex;
     align-items: center;
-    gap: 1rem;
+  }
+  
+  .checkbox-label {
+    flex-wrap: wrap;
+    gap: 0.25rem;
   }
   
   .field-group input,
@@ -398,61 +534,70 @@ form {
 }
 
 input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   margin-right: 0.5rem;
-  accent-color: #374151;
+  accent-color: #10b981;
+  cursor: pointer;
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+  appearance: auto;
+  border: 2px solid #d1d5db;
+  border-radius: 3px;
+  background-color: white;
+  transition: all 0.2s ease;
 }
 
-/* Disabled checkbox styles */
-input[type="checkbox"]:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  accent-color: #9ca3af;
+/* Checkbox styles */
+input[type="checkbox"]:checked {
+  accent-color: #10b981;
+  background-color: #10b981;
+  border-color: #10b981;
 }
 
-.disabled-checkbox {
-  filter: grayscale(100%);
+input[type="checkbox"]:hover {
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
 }
 
-.disabled-label {
-  opacity: 0.6;
-  cursor: not-allowed;
-  color: #6b7280 !important;
+input[type="checkbox"]:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
 }
 
-.coming-soon {
+.recurring-info {
   font-size: 0.75rem;
-  color: #f59e0b;
-  font-weight: 500;
+  color: #6b7280;
+  font-weight: 400;
   font-style: italic;
+  margin-left: 0.25rem;
+}
+
+.recurring-count {
+  font-size: 0.75rem;
+  color: #3b82f6;
+  font-weight: 600;
+  margin-left: 0.25rem;
 }
 
 /* Mobile checkbox adjustments */
 @media (max-width: 767px) {
   input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
+    -webkit-appearance: auto;
+    -moz-appearance: auto;
+    appearance: auto;
   }
   
-  input[type="checkbox"]:disabled {
-    width: 16px;
-    height: 16px;
-  }
+
+
   
-  .col-4.flex.items-center {
-    justify-content: flex-start;
-    gap: 0.5rem;
-  }
-  
-  .col-4.flex.items-center label {
-    margin-bottom: 0;
-  }
-  
-  .coming-soon {
-    display: block;
+  .recurring-info,
+  .recurring-count {
     font-size: 0.7rem;
-    margin-top: 0.25rem;
+    margin-left: 0.25rem;
   }
 }
 

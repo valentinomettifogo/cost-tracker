@@ -55,11 +55,22 @@
         </div>
         
         <div class="filter-group">
-          <label for="dateFilter">Month/Year:</label>
-          <select id="dateFilter" v-model="selectedMonthYear" class="filter-select">
-            <option value="">All Months</option>
-            <option v-for="monthYear in availableMonthsYears" :key="monthYear" :value="monthYear">
-              {{ monthYear }}
+          <label for="yearFilter">Year:</label>
+          <select id="yearFilter" v-model="selectedYear" class="filter-select">
+            <option value="all">All Years</option>
+            <option v-for="year in availableYears" :key="year" :value="year">
+              {{ year }}
+            </option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label for="monthFilter">Month:</label>
+          <select id="monthFilter" v-model="selectedMonth" class="filter-select">
+            <option value="all">All Months</option>
+            <option value="ytd">YTD (Jan-Current)</option>
+            <option v-for="(month, index) in months" :key="index" :value="index + 1">
+              {{ month }}
             </option>
           </select>
         </div>
@@ -93,7 +104,8 @@
             <div class="filter-label">Category:</div>
             <div class="filter-label">Type:</div>
             <div class="filter-label">Recurring:</div>
-            <div class="filter-label">Month/Year:</div>
+            <div class="filter-label">Year:</div>
+            <div class="filter-label">Month:</div>
           </div>
           
           <div class="boxes-column">
@@ -117,10 +129,18 @@
               <option value="false">No</option>
             </select>
             
-            <select v-model="selectedMonthYear" class="filter-select uniform-size">
-              <option value="">All Months</option>
-              <option v-for="monthYear in availableMonthsYears" :key="monthYear" :value="monthYear">
-                {{ monthYear }}
+            <select v-model="selectedYear" class="filter-select uniform-size">
+              <option value="all">All Years</option>
+              <option v-for="year in availableYears" :key="year" :value="year">
+                {{ year }}
+              </option>
+            </select>
+            
+            <select v-model="selectedMonth" class="filter-select uniform-size">
+              <option value="all">All Months</option>
+              <option value="ytd">YTD (Jan-Current)</option>
+              <option v-for="(month, index) in months" :key="index" :value="index + 1">
+                {{ month }}
               </option>
             </select>
           </div>
@@ -175,7 +195,12 @@
             <!-- <td>{{ tx.currency }}</td> -->
             <td>{{ formatDate(tx.date) }}</td>
             <td>{{ tx.description }}</td>
-            <td>{{ tx.isRecurring ? 'Yes' : 'No' }}</td>
+            <td>
+              <span v-if="tx.isRecurring" class="recurring-badge-table">
+                {{ tx.recurringGroupId ? 'Series' : 'Yes' }}
+              </span>
+              <span v-else>No</span>
+            </td>
             <!-- <td>{{ tx.note }}</td> -->
             <td>{{ tx.type }}</td>
             <td>{{ props.userIdToName[tx.userId] || tx.userId }}</td>
@@ -223,7 +248,9 @@
           </div>
           <div class="field" v-if="tx.isRecurring">
             <span class="label">Recurring:</span>
-            <span class="value recurring-badge">Yes</span>
+            <span class="value recurring-badge">
+              {{ tx.recurringGroupId ? 'Part of Series' : 'Yes' }}
+            </span>
           </div>
         </div>
         <div class="card-footer">
@@ -258,7 +285,27 @@ const searchText = ref('');
 const selectedCategory = ref('');
 const selectedType = ref('');
 const selectedRecurring = ref('');
-const selectedMonthYear = ref('');
+const selectedYear = ref('');
+const selectedMonth = ref('');
+
+// Get current year and month for default filter
+function getCurrentYear() {
+  return new Date().getFullYear();
+}
+
+function getCurrentMonth() {
+  return new Date().getMonth() + 1; // 1-based month
+}
+
+// Set default filters to current year and month
+selectedYear.value = getCurrentYear();
+selectedMonth.value = getCurrentMonth();
+
+// Month names for dropdown
+const months = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
 
 // Modal composable
 const { showConfirm, showError, showAlert } = useModal();
@@ -274,8 +321,8 @@ const availableCategories = computed(() => {
   return Array.from(categories).sort();
 });
 
-const availableMonthsYears = computed(() => {
-  const monthsYears = new Set();
+const availableYears = computed(() => {
+  const years = new Set();
   props.transactions.forEach(tx => {
     if (tx.date) {
       let d;
@@ -286,30 +333,11 @@ const availableMonthsYears = computed(() => {
       } else {
         d = new Date(tx.date);
       }
-      
-      const year = d.getFullYear();
-      const month = d.toLocaleString('en-US', { month: 'long' });
-      const monthYear = `${month} ${year}`;
-      monthsYears.add(monthYear);
+      years.add(d.getFullYear());
     }
   });
-  
-  // Sort by date (most recent first)
-  return Array.from(monthsYears).sort((a, b) => {
-    const dateA = new Date(a.split(' ')[1] + '-' + getMonthNumber(a.split(' ')[0]) + '-01');
-    const dateB = new Date(b.split(' ')[1] + '-' + getMonthNumber(b.split(' ')[0]) + '-01');
-    return dateB - dateA;
-  });
+  return Array.from(years).sort((a, b) => b - a); // Most recent first
 });
-
-function getMonthNumber(monthName) {
-  const months = {
-    'january': '01', 'february': '02', 'march': '03', 'april': '04',
-    'may': '05', 'june': '06', 'july': '07', 'august': '08',
-    'september': '09', 'october': '10', 'november': '11', 'december': '12'
-  };
-  return months[monthName.toLowerCase()] || '01';
-}
 
 const filteredTransactions = computed(() => {
   let filtered = props.transactions;
@@ -339,8 +367,8 @@ const filteredTransactions = computed(() => {
     filtered = filtered.filter(tx => Boolean(tx.isRecurring) === isRecurring);
   }
 
-  // Month/Year filter
-  if (selectedMonthYear.value) {
+  // Year filter
+  if (selectedYear.value && selectedYear.value !== 'all') {
     filtered = filtered.filter(tx => {
       if (!tx.date) return false;
       
@@ -353,11 +381,33 @@ const filteredTransactions = computed(() => {
         d = new Date(tx.date);
       }
       
-      const year = d.getFullYear();
-      const month = d.toLocaleString('en-US', { month: 'long' });
-      const txMonthYear = `${month} ${year}`;
+      return d.getFullYear() === parseInt(selectedYear.value);
+    });
+  }
+
+  // Month filter (including YTD option)
+  if (selectedMonth.value && selectedMonth.value !== 'all') {
+    filtered = filtered.filter(tx => {
+      if (!tx.date) return false;
       
-      return txMonthYear === selectedMonthYear.value;
+      let d;
+      if (typeof tx.date === 'string') {
+        d = new Date(tx.date);
+      } else if (tx.date.seconds) {
+        d = new Date(tx.date.seconds * 1000);
+      } else {
+        d = new Date(tx.date);
+      }
+      
+      const txMonth = d.getMonth() + 1; // 1-based month
+      
+      if (selectedMonth.value === 'ytd') {
+        // YTD: from January to current month (inclusive)
+        const currentMonth = getCurrentMonth();
+        return txMonth >= 1 && txMonth <= currentMonth;
+      } else {
+        return txMonth === parseInt(selectedMonth.value);
+      }
     });
   }
 
@@ -370,7 +420,8 @@ function resetFilters() {
   selectedCategory.value = '';
   selectedType.value = '';
   selectedRecurring.value = '';
-  selectedMonthYear.value = '';
+  selectedYear.value = getCurrentYear();
+  selectedMonth.value = getCurrentMonth();
 }
 
 function emitEdit(tx) {
@@ -546,7 +597,10 @@ function formatDateForCSV(date) {
 .filter-actions {
   display: flex;
   align-items: end;
+  gap: 0.5rem;
 }
+
+
 
 .reset-filters-btn {
   display: flex;
@@ -629,12 +683,15 @@ function formatDateForCSV(date) {
     align-items: center;
     justify-content: center;
     margin-top: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
   }
   
   .reset-filters-btn {
-    width: 100%;
     justify-content: center;
     padding: 0.75rem 1rem;
+    width: auto;
+    min-width: 120px;
   }
   
   .results-counter {
@@ -667,15 +724,15 @@ function formatDateForCSV(date) {
   .labels-column {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.65rem;
     padding-top: 0.1rem; /* Allineamento con le select */
   }
   
   .filter-label {
     font-weight: 600;
     color: #374151;
-    font-size: 0.9rem;
-    height: 48px; /* Stessa altezza delle select */
+    font-size: 0.85rem;
+    height: 44px; /* Slightly smaller for 5 filters */
     display: flex;
     align-items: center;
     white-space: nowrap;
@@ -684,14 +741,14 @@ function formatDateForCSV(date) {
   .boxes-column {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.65rem;
   }
   
   .uniform-size {
-    height: 48px !important;
+    height: 44px !important;
     width: 100%;
-    font-size: 16px !important;
-    padding: 0.75rem;
+    font-size: 15px !important;
+    padding: 0.6rem;
     border-radius: 6px;
     border: 1px solid #d1d5db;
     background: white;
@@ -906,6 +963,16 @@ function formatDateForCSV(date) {
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 500;
+}
+
+.recurring-badge-table {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: inline-block;
 }
 
 .action-buttons {
