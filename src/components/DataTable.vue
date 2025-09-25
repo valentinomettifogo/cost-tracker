@@ -364,7 +364,12 @@ const filteredTransactions = computed(() => {
   // Recurring filter
   if (selectedRecurring.value !== '') {
     const isRecurring = selectedRecurring.value === 'true';
-    filtered = filtered.filter(tx => Boolean(tx.isRecurring) === isRecurring);
+    filtered = filtered.filter(tx => {
+      // Normalizza il valore per gestire dati legacy (series, yes, true, etc.)
+      const txRecurring = tx.isRecurring === true || tx.isRecurring === "true" || 
+                         tx.isRecurring === "yes" || tx.isRecurring === "series";
+      return txRecurring === isRecurring;
+    });
   }
 
   // Year filter

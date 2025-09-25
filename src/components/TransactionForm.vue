@@ -118,10 +118,16 @@ const recurringMonthsCount = computed(() => {
 // Precompila il form se editTransaction cambia
 watch(() => props.editTransaction, (val) => {
   if (val) {
+    // Normalizza il valore di isRecurring per gestire dati legacy
+    let normalizedRecurring = false;
+    if (val.isRecurring === true || val.isRecurring === "true" || val.isRecurring === "yes" || val.isRecurring === "series") {
+      normalizedRecurring = true;
+    }
+    
     transaction.value = {
       ...val,
       date: formatDateForInput(val.date),
-      isRecurring: val.isRecurring || false
+      isRecurring: normalizedRecurring
     };
   } else {
     resetForm();
@@ -271,21 +277,16 @@ const handleSubmit = async () => {
     try {
       // Check if the original transaction was recurring
       const isOriginallyRecurring = props.editTransaction.isRecurring && props.editTransaction.recurringGroupId;
+      const isNowRecurring = Boolean(transaction.value.isRecurring);
       
-      if (isOriginallyRecurring) {
-        // For now, just update the single transaction (we can enhance this later)
-        showError(
-          "Editing recurring transactions will only modify this single transaction. Full recurring series editing will be available in a future update.", 
-          "Recurring Transaction Edit"
-        );
-      }
-      
+      // Update the existing transaction
       await updateDoc(doc(db, "apps", "budget", "transactions", props.editTransaction.id), {
         ...transaction.value,
         amount: numericAmount,
         description: transaction.value.description.trim(),
         date: Timestamp.fromDate(new Date(transaction.value.date)),
         userId: user.value?.uid || "",
+        isRecurring: isNowRecurring,
         lastModified: Timestamp.now(),
         // Preserve original recurring metadata if it existed
         ...(isOriginallyRecurring && {
@@ -294,13 +295,50 @@ const handleSubmit = async () => {
         })
       });
       
+      // If recurring is now enabled and it wasn't originally recurring, create future transactions
+      if (isNowRecurring && !isOriginallyRecurring) {
+        const baseTransaction = {
+          ...transaction.value,
+          amount: numericAmount,
+          description: transaction.value.description.trim(),
+          userId: user.value?.uid || ""
+        };
+        
+        // Generate transactions starting from the NEXT month
+        const currentDate = new Date(transaction.value.date);
+        const nextMonth = new Date(currentDate);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        
+        const futureTransactions = generateRecurringTransactions(
+          baseTransaction, 
+          nextMonth.toISOString().slice(0, 10)
+        );
+        
+        if (futureTransactions.length > 0) {
+          await saveRecurringTransactions(futureTransactions);
+          showSuccess(
+            `Transaction updated and ${futureTransactions.length} recurring transactions created for future months!`, 
+            "Success"
+          );
+        } else {
+          showSuccess("Transaction updated successfully!", "Success");
+        }
+      } else if (isOriginallyRecurring && !isNowRecurring) {
+        // If recurring was disabled, just show a message about the single update
+        showSuccess(
+          "Transaction updated successfully! Note: This only affects this single transaction. Other recurring instances remain unchanged.", 
+          "Success"
+        );
+      } else {
+        showSuccess("Transaction updated successfully!", "Success");
+      }
+      
       emit('edited', { 
         ...transaction.value, 
         amount: numericAmount, 
         id: props.editTransaction.id 
       });
       resetForm();
-      showSuccess("Transaction updated successfully!", "Success");
     } catch (e) {
       console.error("Error updating document: ", e);
       showError("Failed to update transaction. Please try again.", "Update Error");
