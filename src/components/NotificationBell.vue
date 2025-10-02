@@ -11,14 +11,24 @@
       <div v-if="showDropdown" class="dropdown">
         <div class="dropdown-header">
           <h4>Notifications</h4>
-          <button 
-            v-if="unreadCount > 0" 
-            @click="handleMarkAllAsRead" 
-            class="mark-all-read"
-            title="Mark all as read"
-          >
-            Mark all as read
-          </button>
+          <div class="header-actions">
+            <button 
+              v-if="unreadCount > 0" 
+              @click="handleMarkAllAsRead" 
+              class="mark-all-read"
+              title="Mark all as read"
+            >
+              Mark all as read
+            </button>
+            <button 
+              v-if="notifications.filter(n => n.read).length > 0" 
+              @click="handleCleanupRead" 
+              class="cleanup-read"
+              title="Clear read notifications"
+            >
+              Clear read
+            </button>
+          </div>
         </div>
         
         <div class="notifications-list">
@@ -54,7 +64,7 @@
 
           <div v-if="notifications.length > 10" class="show-more">
             <button @click="showMore = !showMore" class="show-more-btn">
-              {{ showMore ? 'Show less' : `Show ${notifications.length - 10} more notifications` }}
+              {{ showMore ? 'Show less' : `Show ${Math.min(notifications.length - 10, 40)} more notifications` }}
             </button>
           </div>
         </div>
@@ -67,7 +77,7 @@
 import { ref, computed, watch } from 'vue'
 import { useInAppNotifications } from '../composables/useInAppNotifications'
 
-const { notifications, unreadCount, markAsRead, markAllAsRead } = useInAppNotifications()
+const { notifications, unreadCount, markAsRead, markAllAsRead, deleteAllReadNotifications } = useInAppNotifications()
 const showDropdown = ref(false)
 const showMore = ref(false)
 const shouldShake = ref(false)
@@ -84,7 +94,8 @@ watch(unreadCount, (newCount, oldCount) => {
 
 const displayedNotifications = computed(() => {
   if (showMore.value) {
-    return notifications.value
+    // Mostra massimo 50 notifiche anche quando "show more" è attivo
+    return notifications.value.slice(0, 50)
   }
   return notifications.value.slice(0, 10)
 })
@@ -106,6 +117,10 @@ async function handleNotificationClick(notification) {
 
 async function handleMarkAllAsRead() {
   await markAllAsRead()
+}
+
+async function handleCleanupRead() {
+  await deleteAllReadNotifications()
 }
 
 function formatDate(timestamp) {
@@ -244,6 +259,12 @@ const vClickOutside = {
   background: #f9fafb;
 }
 
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .dropdown-header h4 {
   margin: 0;
   font-size: 1rem;
@@ -251,7 +272,8 @@ const vClickOutside = {
   color: #374151;
 }
 
-.mark-all-read {
+.mark-all-read,
+.cleanup-read {
   background: none;
   border: none;
   color: #3b82f6;
@@ -260,11 +282,22 @@ const vClickOutside = {
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-.mark-all-read:hover {
+.mark-all-read:hover,
+.cleanup-read:hover {
   background-color: #eff6ff;
   color: #2563eb;
+}
+
+.cleanup-read {
+  color: #6b7280;
+}
+
+.cleanup-read:hover {
+  background-color: #f3f4f6;
+  color: #4b5563;
 }
 
 .notifications-list {

@@ -9,10 +9,12 @@ import {
   orderBy, 
   onSnapshot, 
   updateDoc, 
+  deleteDoc,
   doc, 
   getDoc,
   serverTimestamp,
-  getDocs 
+  getDocs,
+  Timestamp 
 } from 'firebase/firestore'
 
 export function useInAppNotifications() {
@@ -169,6 +171,143 @@ export function useInAppNotifications() {
     }
   }
 
+  // Pulizia automatica delle notifiche vecchie (versione semplificata)
+  async function cleanupOldNotifications() {
+    try {
+      const currentUserId = auth.currentUser?.uid
+      if (!currentUserId) return
+
+      // Query semplice per ottenere tutte le notifiche dell'utente
+      const userNotificationsQuery = query(
+        collection(db, 'apps', 'budget', 'notifications'),
+        where('userId', '==', currentUserId)
+      )
+
+      const userNotificationsSnapshot = await getDocs(userNotificationsQuery)
+      
+      if (userNotificationsSnapshot.empty) return
+
+      // Filtra lato client le notifiche vecchie da eliminare
+      const now = new Date()
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+
+      const notificationsToDelete = userNotificationsSnapshot.docs.filter(doc => {
+        const data = doc.data()
+        
+        // Controlla la data
+        let createdAt
+        if (data.createdAt?.toDate) {
+          createdAt = data.createdAt.toDate()
+        } else if (data.createdAt?.seconds) {
+          createdAt = new Date(data.createdAt.seconds * 1000)
+        } else {
+          return false
+        }
+        
+        return createdAt < thirtyDaysAgo
+      })
+
+      if (notificationsToDelete.length === 0) return
+
+      // Elimina le notifiche vecchie in batch
+      const deletePromises = notificationsToDelete.map(doc => 
+        deleteDoc(doc.ref)
+      )
+
+      await Promise.all(deletePromises)
+      console.log(`Cleanup: ${deletePromises.length} old notifications deleted`)
+    } catch (error) {
+      console.error('Errore durante la pulizia delle notifiche:', error)
+    }
+  }
+
+  // Elimina tutte le notifiche lette immediatamente
+  async function deleteAllReadNotifications() {
+    try {
+      const currentUserId = auth.currentUser?.uid
+      if (!currentUserId) return
+
+      // Query semplice per ottenere tutte le notifiche dell'utente
+      const userNotificationsQuery = query(
+        collection(db, 'apps', 'budget', 'notifications'),
+        where('userId', '==', currentUserId)
+      )
+
+      const userNotificationsSnapshot = await getDocs(userNotificationsQuery)
+      
+      if (userNotificationsSnapshot.empty) return
+
+      // Filtra tutte le notifiche lette
+      const readNotifications = userNotificationsSnapshot.docs.filter(doc => {
+        const data = doc.data()
+        return data.read === true
+      })
+
+      if (readNotifications.length === 0) return
+
+      // Elimina tutte le notifiche lette
+      const deletePromises = readNotifications.map(doc => 
+        deleteDoc(doc.ref)
+      )
+
+      await Promise.all(deletePromises)
+      console.log(`Deleted ${deletePromises.length} read notifications`)
+    } catch (error) {
+      console.error('Errore durante l\'eliminazione delle notifiche lette:', error)
+    }
+  }
+
+  // Pulizia delle notifiche lette (versione semplificata senza indici complessi)
+  async function cleanupReadNotifications() {
+    try {
+      const currentUserId = auth.currentUser?.uid
+      if (!currentUserId) return
+
+      // Query semplice per ottenere tutte le notifiche dell'utente
+      const userNotificationsQuery = query(
+        collection(db, 'apps', 'budget', 'notifications'),
+        where('userId', '==', currentUserId)
+      )
+
+      const userNotificationsSnapshot = await getDocs(userNotificationsQuery)
+      
+      if (userNotificationsSnapshot.empty) return
+
+      // Filtra lato client le notifiche lette da eliminare
+      const now = new Date()
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+      const notificationsToDelete = userNotificationsSnapshot.docs.filter(doc => {
+        const data = doc.data()
+        if (!data.read) return false
+        
+        // Controlla la data
+        let createdAt
+        if (data.createdAt?.toDate) {
+          createdAt = data.createdAt.toDate()
+        } else if (data.createdAt?.seconds) {
+          createdAt = new Date(data.createdAt.seconds * 1000)
+        } else {
+          return false
+        }
+        
+        return createdAt < sevenDaysAgo
+      })
+
+      if (notificationsToDelete.length === 0) return
+
+      // Elimina le notifiche lette vecchie
+      const deletePromises = notificationsToDelete.map(doc => 
+        deleteDoc(doc.ref)
+      )
+
+      await Promise.all(deletePromises)
+      console.log(`Cleanup: ${deletePromises.length} old read notifications deleted`)
+    } catch (error) {
+      console.error('Errore durante la pulizia delle notifiche lette:', error)
+    }
+  }
+
   // Cleanup listener quando il componente viene smontato
   function stopListening() {
     if (unsubscribe) {
@@ -181,11 +320,21 @@ export function useInAppNotifications() {
     // Avvia il listener solo se l'utente è autenticato
     if (auth.currentUser) {
       startListening()
+      // Esegui pulizia automatica all'avvio (in background)
+      setTimeout(() => {
+        cleanupReadNotifications()
+        cleanupOldNotifications()
+      }, 2000)
     } else {
       // Se non è ancora autenticato, aspetta
       const unsubscribeAuth = auth.onAuthStateChanged((user) => {
         if (user) {
           startListening()
+          // Esegui pulizia automatica all'avvio (in background)
+          setTimeout(() => {
+            cleanupReadNotifications()
+            cleanupOldNotifications()
+          }, 2000)
           unsubscribeAuth()
         }
       })
@@ -204,6 +353,9 @@ export function useInAppNotifications() {
     markAllAsRead,
     getSharedUsers,
     startListening,
-    stopListening
+    stopListening,
+    cleanupOldNotifications,
+    cleanupReadNotifications,
+    deleteAllReadNotifications
   }
 }
