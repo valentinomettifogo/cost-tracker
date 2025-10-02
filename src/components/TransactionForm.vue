@@ -223,11 +223,9 @@ function getNumericAmount() {
 // Send notifications to shared users
 async function sendNotificationForNewTransaction(transactionData) {
   try {
-    // Ottieni gli utenti condivisi (sostituisci con la tua logica reale)
     const sharedUsers = await getSharedUsers();
     
     if (sharedUsers && sharedUsers.length > 0) {
-      // Ottieni il nome dell'utente corrente (sostituisci con la tua logica)
       const currentUserName = user.value?.displayName || user.value?.email || 'Un utente';
       
       await createNotificationForSharedUsers(
@@ -391,7 +389,7 @@ const handleSubmit = async () => {
           await sendNotificationForNewTransaction({
             id: 'recurring_series',
             ...baseTransaction,
-            description: `${baseTransaction.description} (Serie ricorrente - ${recurringTransactions.length} transazioni)`
+            description: `${baseTransaction.description} (Recurring series - ${recurringTransactions.length} transactions)`
           });
         }
         

@@ -1,5 +1,6 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { db, auth } from '../firebase'
+import { useToast } from './useToast'
 import { 
   collection, 
   addDoc, 
@@ -9,6 +10,7 @@ import {
   onSnapshot, 
   updateDoc, 
   doc, 
+  getDoc,
   serverTimestamp,
   getDocs 
 } from 'firebase/firestore'
@@ -17,6 +19,8 @@ export function useInAppNotifications() {
   const notifications = ref([])
   const unreadCount = ref(0)
   let unsubscribe = null
+  let knownNotificationIds = new Set()
+  const { showNotificationToast } = useToast()
 
   // Crea una notifica per tutti gli utenti condivisi
   async function createNotificationForSharedUsers(transaction, sharedUserIds, creatorName) {
@@ -24,8 +28,8 @@ export function useInAppNotifications() {
 
     const notificationData = {
       type: 'new_transaction',
-      title: 'Nuova Transazione',
-      message: `${creatorName} ha aggiunto: ${transaction.description} - €${transaction.amount}`,
+      title: 'New Transaction',
+      message: `${creatorName} added: ${transaction.description} - €${transaction.amount}`,
       transactionId: transaction.id,
       createdAt: serverTimestamp(),
       read: false,
@@ -53,7 +57,6 @@ export function useInAppNotifications() {
 
     try {
       await Promise.all(promises)
-      console.log(`Notifiche create per ${promises.length} utenti`)
     } catch (error) {
       console.error('Errore nella creazione delle notifiche:', error)
     }
@@ -66,16 +69,37 @@ export function useInAppNotifications() {
 
     const q = query(
       collection(db, 'apps', 'budget', 'notifications'),
-      where('userId', '==', currentUserId),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', currentUserId)
     )
 
     unsubscribe = onSnapshot(q, (snapshot) => {
-      notifications.value = snapshot.docs.map(doc => ({
+      // Mappa e ordina le notifiche lato client
+      const newNotifications = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }))
+      })).sort((a, b) => {
+        // Ordina per createdAt decrescente (più recenti prima)
+        const timeA = a.createdAt?.seconds || 0
+        const timeB = b.createdAt?.seconds || 0
+        return timeB - timeA
+      })
       
+      // Rileva solo le notifiche veramente nuove (non presenti nel set precedente)
+      if (knownNotificationIds.size > 0) {
+        const reallyNewNotifications = newNotifications.filter(notification => 
+          !knownNotificationIds.has(notification.id) && !notification.read
+        )
+        
+        // Mostra toast solo per le notifiche veramente nuove
+        reallyNewNotifications.forEach(notification => {
+          showNotificationToast(notification)
+        })
+      }
+      
+      // Aggiorna il set degli ID conosciuti
+      knownNotificationIds = new Set(newNotifications.map(n => n.id))
+      
+      notifications.value = newNotifications
       unreadCount.value = notifications.value.filter(n => !n.read).length
     })
   }
@@ -109,23 +133,32 @@ export function useInAppNotifications() {
       const currentUserId = auth.currentUser?.uid
       if (!currentUserId) return []
 
-      // Ottieni il documento dell'utente corrente per vedere con chi condivide
-      const currentUserDoc = await getDocs(collection(db, 'users'))
+      // Prima ottieni il documento dell'utente corrente
+      const currentUserDocRef = doc(db, 'users', currentUserId)
+      const currentUserDoc = await getDoc(currentUserDocRef)
+      
+      if (!currentUserDoc.exists()) return []
+
+      const currentUserData = currentUserDoc.data()
       const sharedUserIds = new Set()
 
-      // Cerca tutti gli utenti che condividono con l'utente corrente o viceversa
-      currentUserDoc.docs.forEach(doc => {
-        const userData = doc.data()
-        const userId = doc.id
-
-        // Se l'utente corrente è nella lista sharedWith dell'altro utente
-        if (userData.sharedWith && Array.isArray(userData.sharedWith) && userData.sharedWith.includes(currentUserId)) {
+      // Aggiungi gli utenti con cui l'utente corrente condivide
+      if (currentUserData.sharedWith && Array.isArray(currentUserData.sharedWith)) {
+        currentUserData.sharedWith.forEach(userId => {
           sharedUserIds.add(userId)
-        }
+        })
+      }
 
-        // Se l'altro utente è nella lista sharedWith dell'utente corrente
-        if (userId === currentUserId && userData.sharedWith && Array.isArray(userData.sharedWith)) {
-          userData.sharedWith.forEach(sharedId => sharedUserIds.add(sharedId))
+      // Ora cerca tutti gli utenti che hanno l'utente corrente nella loro lista sharedWith
+      const allUsersSnapshot = await getDocs(collection(db, 'users'))
+      allUsersSnapshot.docs.forEach(userDoc => {
+        const userData = userDoc.data()
+        const userId = userDoc.id
+
+        if (userId !== currentUserId && userData.sharedWith && Array.isArray(userData.sharedWith)) {
+          if (userData.sharedWith.includes(currentUserId)) {
+            sharedUserIds.add(userId)
+          }
         }
       })
 

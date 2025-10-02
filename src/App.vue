@@ -88,6 +88,9 @@
       @cancel="handleCancel"
       @close="handleClose"
     />
+    
+    <!-- Toast Notifications -->
+    <ToastContainer />
   </div>
 </template>
 
@@ -98,6 +101,7 @@ import Login from './components/Login.vue';
 import Stats from './components/Stats.vue';
 import Modal from './components/Modal.vue';
 import NotificationBell from './components/NotificationBell.vue';
+import ToastContainer from './components/ToastContainer.vue';
 import { ref, onMounted } from 'vue';
 import { db, auth } from './firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
