@@ -22,6 +22,7 @@
               <h2>{{ user?.displayName || user?.email || 'User' }}</h2>
             </div>
             <div class="nav-right">
+              <NotificationBell />
               <button class="logout-btn" @click="logout">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M16 13v-2H7V8l-5 4 5 4v-3z"/>
@@ -96,6 +97,7 @@ import DataTable from './components/DataTable.vue';
 import Login from './components/Login.vue';
 import Stats from './components/Stats.vue';
 import Modal from './components/Modal.vue';
+import NotificationBell from './components/NotificationBell.vue';
 import { ref, onMounted } from 'vue';
 import { db, auth } from './firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
@@ -264,6 +266,8 @@ function onTransactionEdited(updatedTx) {
   flex: 1;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .nav-center {

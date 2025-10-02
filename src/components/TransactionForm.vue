@@ -81,8 +81,10 @@ function getToday() {
 }
 
 import { useAuth } from "../composables/useAuth";
+import { useInAppNotifications } from "../composables/useInAppNotifications";
 const { user } = useAuth();
 const { showError, showSuccess } = useModal();
+const { createNotificationForSharedUsers, getSharedUsers } = useInAppNotifications();
 
 const categories = ref([]);
 const transaction = ref({
@@ -216,6 +218,28 @@ function getNumericAmount() {
   if (!transaction.value.amount) return 0;
   const numericValue = parseFloat(transaction.value.amount.toString().replace(',', '.'));
   return isNaN(numericValue) ? 0 : numericValue;
+}
+
+// Send notifications to shared users
+async function sendNotificationForNewTransaction(transactionData) {
+  try {
+    // Ottieni gli utenti condivisi (sostituisci con la tua logica reale)
+    const sharedUsers = await getSharedUsers();
+    
+    if (sharedUsers && sharedUsers.length > 0) {
+      // Ottieni il nome dell'utente corrente (sostituisci con la tua logica)
+      const currentUserName = user.value?.displayName || user.value?.email || 'Un utente';
+      
+      await createNotificationForSharedUsers(
+        transactionData,
+        sharedUsers,
+        currentUserName
+      );
+    }
+  } catch (error) {
+    console.error('Errore nell\'invio delle notifiche:', error);
+    // Non bloccare il salvataggio se le notifiche falliscono
+  }
 }
 
 // Generate recurring transactions from selected date until end of year
@@ -362,6 +386,15 @@ const handleSubmit = async () => {
         
         await saveRecurringTransactions(recurringTransactions);
         
+        // Invia notifiche per la serie di transazioni ricorrenti
+        if (recurringTransactions.length > 0) {
+          await sendNotificationForNewTransaction({
+            id: 'recurring_series',
+            ...baseTransaction,
+            description: `${baseTransaction.description} (Serie ricorrente - ${recurringTransactions.length} transazioni)`
+          });
+        }
+        
         showSuccess(
           `${recurringTransactions.length} recurring transactions created successfully until end of year!`, 
           "Recurring Transactions Created"
@@ -369,7 +402,7 @@ const handleSubmit = async () => {
       } else {
         // Handle single transaction
         const now = Timestamp.now();
-        await addDoc(collection(db, "apps", "budget", "transactions"), {
+        const docRef = await addDoc(collection(db, "apps", "budget", "transactions"), {
           ...transaction.value,
           amount: numericAmount,
           description: transaction.value.description.trim(),
@@ -378,6 +411,14 @@ const handleSubmit = async () => {
           isRecurring: false,
           createdAt: now,
           lastModified: now
+        });
+        
+        // Invia notifiche agli utenti condivisi
+        await sendNotificationForNewTransaction({
+          id: docRef.id,
+          ...transaction.value,
+          amount: numericAmount,
+          description: transaction.value.description.trim()
         });
         
         showSuccess("Transaction saved successfully!", "Success");
