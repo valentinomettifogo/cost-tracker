@@ -12,7 +12,7 @@
       <!-- Income Categories -->
       <div class="category-section">
         <div class="section-title">
-          <h4>Income Categories</h4>
+          <h4>Income Categories 📈</h4>
           <button @click="showAddForm('income')" class="add-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
@@ -56,7 +56,7 @@
       <!-- Spend Categories -->
       <div class="category-section">
         <div class="section-title">
-          <h4>Spend Categories</h4>
+          <h4>Spend Categories 📉</h4>
           <button @click="showAddForm('spend')" class="add-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
@@ -100,7 +100,7 @@
       <!-- Savings Categories -->
       <div class="category-section">
         <div class="section-title">
-          <h4>Savings Categories</h4>
+          <h4>Savings Categories 💰</h4>
           <button @click="showAddForm('savings')" class="add-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>

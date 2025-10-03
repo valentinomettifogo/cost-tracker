@@ -19,7 +19,7 @@
         <select id="category" v-model="selectedCategoryWithType" required @change="handleCategoryChange">
           <option value="">Select a category...</option>
           
-          <optgroup label="💰 Income">
+          <optgroup label="📈 Income">
             <option 
               v-for="cat in incomeCategories" 
               :key="`income-${cat.name}`" 
@@ -29,7 +29,7 @@
             </option>
           </optgroup>
           
-          <optgroup label="💸 Spend">
+          <optgroup label="📉 Spend">
             <option 
               v-for="cat in spendCategories" 
               :key="`spend-${cat.name}`" 

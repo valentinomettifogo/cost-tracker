@@ -216,7 +216,7 @@ const selectedMonth = ref('ytd');
 const selectedCategory = ref('all');
 
 // Collapsible filters state
-const filtersOpen = ref(false); // desktop
+const filtersOpen = ref(true); // desktop - open by default
 const mobileFiltersOpen = ref(false); // mobile
 
 // Dati per i selettori
