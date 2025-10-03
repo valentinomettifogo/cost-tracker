@@ -8,6 +8,7 @@ import {
   signInWithPopup
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { useCategories } from "./useCategories";
 
 const user = ref(null);
 
@@ -26,7 +27,7 @@ export function useAuth() {
     });
   });
 
-  // create user doc if missing
+  // create user doc if missing and ensure categories exist
   async function ensureUserDoc(u) {
     if (!u || !u.uid) {
       console.warn("ensureUserDoc: no user provided");
@@ -35,8 +36,11 @@ export function useAuth() {
 
     const userRef = doc(db, "users", u.uid);
     const snap = await getDoc(userRef);
+    
+    let isNewUser = false;
 
     if (!snap.exists()) {
+      isNewUser = true;
       await setDoc(userRef, {
         email: u.email || null,
         displayName: u.displayName || u.email ||null,
@@ -45,6 +49,25 @@ export function useAuth() {
         role: "user",
         sharedWith: []
       });
+    }
+
+    // Ensure user has categories (for both new and existing users)
+    await ensureUserCategories(u.uid, isNewUser);
+  }
+
+  // Initialize categories for user (hybrid structure with migration)
+  async function ensureUserCategories(userId, isNewUser = false) {
+    try {
+      const { initCategories } = useCategories(userId);
+      
+      // Initialize hybrid category structure (handles migration automatically)
+      console.log(`Initializing categories for user ${userId} (new: ${isNewUser})`);
+      await initCategories();
+      
+    } catch (error) {
+      // Don't break auth flow if category initialization fails
+      console.error("Error initializing user categories:", error);
+      // We could add analytics/monitoring here for production
     }
   }
 

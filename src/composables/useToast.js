@@ -49,10 +49,26 @@ export function useToast() {
     return showToast(message, 'notification', 5000)
   }
   
+  // Convenience functions for common toast types
+  function showSuccess(message, duration = 4000) {
+    return showToast(message, 'success', duration)
+  }
+  
+  function showError(message, duration = 4000) {
+    return showToast(message, 'error', duration)
+  }
+  
+  function showInfo(message, duration = 4000) {
+    return showToast(message, 'info', duration)
+  }
+  
   return {
     toasts, // Restituisco il ref direttamente
     showToast,
     removeToast,
-    showNotificationToast
+    showNotificationToast,
+    showSuccess,
+    showError,
+    showInfo
   }
 }

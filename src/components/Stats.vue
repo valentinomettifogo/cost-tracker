@@ -175,6 +175,8 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
+import { useCategories } from '../composables/useCategories';
+import { useAuth } from '../composables/useAuth';
 
 // Registra i componenti di Chart.js
 Chart.register(
@@ -195,6 +197,10 @@ const props = defineProps({
     default: () => []
   }
 });
+
+// Get user and categories
+const { user } = useAuth();
+const { allCategories } = useCategories(user.value?.uid);
 
 // Refs per i chart canvas
 const barChart = ref(null);
@@ -254,6 +260,12 @@ const availableYears = computed(() => {
 });
 
 const availableCategories = computed(() => {
+  // Use categories from hybrid structure if available, otherwise fall back to transaction extraction
+  if (allCategories.value && allCategories.value.length > 0) {
+    return allCategories.value.map(cat => cat.name).sort();
+  }
+  
+  // Fallback: extract from transactions for backward compatibility
   const categories = new Set();
   props.transactions.forEach(tx => {
     if (tx.category) {

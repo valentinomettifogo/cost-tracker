@@ -16,8 +16,38 @@
       </div>
       <div class="field-group">
         <label for="category">Category:</label>
-        <select id="category" v-model="transaction.category" required>
-          <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+        <select id="category" v-model="selectedCategoryWithType" required @change="handleCategoryChange">
+          <option value="">Select a category...</option>
+          
+          <optgroup label="💰 Income">
+            <option 
+              v-for="cat in incomeCategories" 
+              :key="`income-${cat.name}`" 
+              :value="`income|${cat.name}`"
+            >
+              {{ cat.name }}
+            </option>
+          </optgroup>
+          
+          <optgroup label="💸 Spend">
+            <option 
+              v-for="cat in spendCategories" 
+              :key="`spend-${cat.name}`" 
+              :value="`spend|${cat.name}`"
+            >
+              {{ cat.name }}
+            </option>
+          </optgroup>
+          
+          <optgroup label="💰 Savings">
+            <option 
+              v-for="cat in savingsCategories" 
+              :key="`savings-${cat.name}`" 
+              :value="`savings|${cat.name}`"
+            >
+              {{ cat.name }}
+            </option>
+          </optgroup>
         </select>
       </div>
       <div class="field-group">
@@ -27,14 +57,6 @@
       <div class="field-group">
         <label for="date">Date:</label>
         <input id="date" v-model="transaction.date" type="date" required />
-      </div>
-      <div class="field-group">
-        <label for="type">Type:</label>
-        <select id="type" v-model="transaction.type">
-          <option value="spend">Spend</option>
-          <option value="income">Income</option>
-          <option value="savings">Savings</option>
-        </select>
       </div>
       <div class="field-group checkbox-group">
         <label for="recurring">Recurring:</label>
@@ -67,6 +89,7 @@ import { ref, onMounted, watch, computed } from "vue";
 import { db } from "../firebase";
 import { collection, addDoc, updateDoc, Timestamp, doc, getDoc } from "firebase/firestore";
 import { useModal } from "../composables/useModal";
+import { useCategories } from "../composables/useCategories";
 const props = defineProps({
   editTransaction: {
     type: Object,
@@ -86,7 +109,7 @@ const { user } = useAuth();
 const { showError, showSuccess } = useModal();
 const { createNotificationForSharedUsers, getSharedUsers } = useInAppNotifications();
 
-const categories = ref([]);
+// Initialize transaction object first
 const transaction = ref({
   amount: "",
   category: "",
@@ -97,6 +120,46 @@ const transaction = ref({
   type: "spend",
   userId: user.value?.uid || ""
 });
+
+// Categories state for grouped dropdown
+const incomeCategories = ref([]);
+const spendCategories = ref([]);
+const savingsCategories = ref([]);
+const selectedCategoryWithType = ref('');
+
+// Initialize categories when user is available
+let categoriesComposable = null;
+watch(user, (newUser) => {
+  if (newUser?.uid && !categoriesComposable) {
+    categoriesComposable = useCategories(newUser.uid);
+    
+    // Watch for category changes and update grouped categories
+    watch(categoriesComposable.allCategories, (newCategories) => {
+      if (newCategories && newCategories.length > 0) {
+        incomeCategories.value = newCategories
+          .filter(cat => cat.type === 'income')
+          .sort((a, b) => a.name.localeCompare(b.name));
+          
+        spendCategories.value = newCategories
+          .filter(cat => cat.type === 'spend')
+          .sort((a, b) => a.name.localeCompare(b.name));
+          
+        savingsCategories.value = newCategories
+          .filter(cat => cat.type === 'savings')
+          .sort((a, b) => a.name.localeCompare(b.name));
+      }
+    }, { immediate: true });
+  }
+}, { immediate: true });
+
+// Handle category selection (parses type|category format)
+const handleCategoryChange = () => {
+  if (selectedCategoryWithType.value) {
+    const [type, categoryName] = selectedCategoryWithType.value.split('|');
+    transaction.value.type = type;
+    transaction.value.category = categoryName;
+  }
+};
 
 // Computed property to show how many recurring transactions will be created
 const recurringMonthsCount = computed(() => {
@@ -131,21 +194,23 @@ watch(() => props.editTransaction, (val) => {
       date: formatDateForInput(val.date),
       isRecurring: normalizedRecurring
     };
+    
+    // Set the combined category selection for editing
+    selectedCategoryWithType.value = `${val.type}|${val.category}`;
   } else {
     resetForm();
+    selectedCategoryWithType.value = '';
   }
 }, { immediate: true });
 
 onMounted(async () => {
-  const categoryDoc = await getDoc(doc(db, "apps", "budget", "config", "category"));
-  if (categoryDoc.exists()) {
-    categories.value = categoryDoc.data().name || [];
-    // Imposta la categoria di default solo se non stai editando
-    if (categories.value.length > 0 && !props.editTransaction) {
-      transaction.value.category = categories.value[0];
-    }
+  // Initialize categories using hybrid structure
+  if (user.value?.uid && categoriesComposable) {
+    await categoriesComposable.initCategories();
   }
 });
+
+
 
 function formatDateForInput(date) {
   if (!date) return getToday();
@@ -174,10 +239,7 @@ function resetForm() {
     type: "spend",
     userId: user.value?.uid || ""
   };
-  // Ensure categories is set if available
-  if (categories.value.length > 0) {
-    transaction.value.category = categories.value[0];
-  }
+  // Category will be set by the watcher
 }
 
 // Handle amount input with comma/dot conversion

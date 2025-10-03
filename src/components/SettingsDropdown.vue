@@ -16,6 +16,15 @@
         </div>
         
         <div class="settings-list">
+          <button @click="openCategoriesSettings" class="settings-item">
+            <span style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/>
+              </svg>
+              <span style="white-space: nowrap;">Categories</span>
+            </span>
+          </button>
+          
           <button @click="handleLogout" class="settings-item logout-item">
             <span style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
@@ -35,6 +44,7 @@
 import { ref } from 'vue'
 import { signOut } from 'firebase/auth'
 import { auth } from '../firebase'
+import { useCategoriesModal } from '../composables/useCategoriesModal'
 
 // Props
 const props = defineProps({
@@ -45,6 +55,7 @@ const props = defineProps({
 })
 
 const showDropdown = ref(false)
+const { openCategoriesModal } = useCategoriesModal()
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
@@ -52,6 +63,11 @@ const toggleDropdown = () => {
 
 const closeDropdown = () => {
   showDropdown.value = false
+}
+
+const openCategoriesSettings = () => {
+  openCategoriesModal()
+  closeDropdown()
 }
 
 const handleLogout = async () => {

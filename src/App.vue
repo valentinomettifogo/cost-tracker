@@ -114,6 +114,23 @@
       @close="handleClose"
     />
     
+    <!-- Categories Settings Modal -->
+    <div v-if="showCategoriesModal" class="modal-overlay" @click="closeCategoriesModal">
+      <div class="categories-modal" @click.stop>
+        <div class="categories-modal-header">
+          <h3>Manage Categories</h3>
+          <button @click="closeCategoriesModal" class="close-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="categories-modal-body">
+          <CategoriesSettings />
+        </div>
+      </div>
+    </div>
+    
     <!-- Toast Notifications -->
     <ToastContainer />
   </div>
@@ -128,11 +145,13 @@ import Modal from './components/Modal.vue';
 import NotificationBell from './components/NotificationBell.vue';
 import SettingsDropdown from './components/SettingsDropdown.vue';
 import ToastContainer from './components/ToastContainer.vue';
+import CategoriesSettings from './components/CategoriesSettings.vue';
 import { ref, onMounted } from 'vue';
 import { db, auth } from './firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useModal } from './composables/useModal';
+import { useCategoriesModal } from './composables/useCategoriesModal';
 
 
 const transactions = ref([]);
@@ -144,6 +163,9 @@ const isAllowed = ref(false);
 
 // Modal composable
 const { modalState, handleConfirm, handleCancel, handleClose } = useModal();
+
+// Categories modal composable
+const { showCategoriesModal, closeCategoriesModal } = useCategoriesModal();
 
 // Controlla lo stato utente e recupera dati utente da Firestore
 
@@ -444,6 +466,67 @@ nav button.active {
   max-width: 120px;
   justify-content: center;
   text-align: center;
+}
+
+/* Categories Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.categories-modal {
+  background: white;
+  border-radius: 8px;
+  max-width: 800px;
+  width: 90vw;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.categories-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.categories-modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.categories-modal-body {
+  padding: 0;
+  overflow-y: auto;
+  max-height: calc(80vh - 80px);
 }
 </style>
 

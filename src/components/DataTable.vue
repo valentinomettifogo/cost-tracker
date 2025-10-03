@@ -293,6 +293,8 @@ import { ref, computed } from 'vue';
 import { db } from '../firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { useModal } from '../composables/useModal';
+import { useCategories } from '../composables/useCategories';
+import { useAuth } from '../composables/useAuth';
 
 const props = defineProps({
   transactions: {
@@ -305,6 +307,10 @@ const props = defineProps({
   }
 });
 const emit = defineEmits(['deleted', 'edit']);
+
+// Get user and categories
+const { user } = useAuth();
+const { allCategories } = useCategories(user.value?.uid);
 
 // Filter states
 const searchText = ref('');
@@ -342,6 +348,12 @@ const { showConfirm, showError, showAlert } = useModal();
 
 // Computed properties
 const availableCategories = computed(() => {
+  // Use categories from hybrid structure if available, otherwise fall back to transaction extraction
+  if (allCategories.value && allCategories.value.length > 0) {
+    return allCategories.value.map(cat => cat.name).sort();
+  }
+  
+  // Fallback: extract from transactions for backward compatibility
   const categories = new Set();
   props.transactions.forEach(tx => {
     if (tx.category) {
