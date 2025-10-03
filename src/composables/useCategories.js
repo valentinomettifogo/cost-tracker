@@ -1,31 +1,8 @@
 import { ref, computed } from 'vue'
 import { db } from '../firebase'
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { useToast } from './useToast'
 
-// Mapping of existing legacy categories to types (for migration)
-export const LEGACY_CATEGORY_MAPPING = {
-  // Income categories
-  'Paycheck': 'income',
-  
-  // Spend categories  
-  'Mortgage': 'spend',
-  'Restaurant': 'spend',
-  'Bills': 'spend',
-  'Health': 'spend',
-  'Transportation': 'spend',
-  'Entertainment': 'spend',
-  'Groceries': 'spend',
-  'Parents': 'spend',
-  'Clothing/Accessories': 'spend',
-  'Lunch @ work': 'spend',
-  'Home': 'spend',
-  'Travel': 'spend',
-  'Utilities': 'spend',
-  
-  // Savings categories
-  'Savings': 'savings'
-}
 
 // Global default categories (shared across all users) - Based on your existing categories
 export const GLOBAL_DEFAULT_CATEGORIES = {
@@ -52,26 +29,7 @@ export const GLOBAL_DEFAULT_CATEGORIES = {
   ]
 }
 
-// Additional default categories for new users (can be added to global defaults)
-export const ADDITIONAL_DEFAULT_CATEGORIES = {
-  income: [
-    'Salary',
-    'Freelance', 
-    'Investment Returns',
-    'Gift/Bonus'
-  ],
-  spend: [
-    'Shopping',
-    'Dining Out',
-    'Healthcare'
-  ],
-  savings: [
-    'Emergency Fund',
-    'Vacation',
-    'Investment',
-    'Retirement'
-  ]
-}
+
 
 export function useCategories(userId) {
   const { showSuccess, showError } = useToast()
@@ -143,7 +101,6 @@ export function useCategories(userId) {
         await initializeGlobalCategories()
       }
     } catch (err) {
-      console.error('Error loading global categories:', err)
       // Fallback to hardcoded defaults
       globalCategories.value = createGlobalCategoryObjects()
     }
@@ -159,9 +116,8 @@ export function useCategories(userId) {
         version: 1
       })
       globalCategories.value = createGlobalCategoryObjects()
-      console.log('Global categories initialized')
     } catch (err) {
-      console.error('Error initializing global categories:', err)
+      // Silent error handling
     }
   }
 
@@ -210,7 +166,6 @@ export function useCategories(userId) {
         userCustomCategories.value = []
       }
     } catch (err) {
-      console.error('Error loading user custom categories:', err)
       userCustomCategories.value = []
     }
   }
@@ -233,7 +188,6 @@ export function useCategories(userId) {
       await checkAndMigrateOldStructure()
       
     } catch (err) {
-      console.error('Error loading categories:', err)
       error.value = 'Failed to load categories'
       showError('Failed to load categories')
     } finally {
@@ -255,80 +209,25 @@ export function useCategories(userId) {
         
         // Check if user has new structured format (version 2)
         if (data.version === 2 && data.categories && typeof data.categories === 'object') {
-          console.log('User already has optimized category structure (v2)')
           return // No migration needed
         }
         
         // If user has old array structure in categories field, skip migration
         // (This should not happen after our migration script)
         if (data.categories && Array.isArray(data.categories)) {
-          console.log('Found legacy array structure, but migration already completed')
           return
         }
       }
       
-      // Check if user needs migration from transactions (first time user)
-      const hasCustomCategories = userCustomCategories.value.length > 0
-      if (!hasCustomCategories) {
-        await migrateFromTransactions()
-      }
+      // User categories loaded successfully
     } catch (err) {
-      console.error('Error checking/migrating old structure:', err)
+      // Silent error handling
     }
   }
 
-  // Migrate categories from existing transactions (for users with no category setup)
-  const migrateFromTransactions = async () => {
-    if (!userId) return
 
-    try {
-      // Get user's existing transactions to extract custom categories
-      const transactionsRef = collection(db, 'apps', 'budget', 'transactions')
-      const q = query(transactionsRef, where('userId', '==', userId))
-      const querySnapshot = await getDocs(q)
-      
-      const customCategoriesFound = new Set()
-      const globalNames = new Set(globalCategories.value.map(cat => cat.name.toLowerCase()))
-      
-      querySnapshot.docs.forEach(doc => {
-        const transaction = doc.data()
-        if (transaction.category) {
-          const categoryName = transaction.category.toLowerCase()
-          // If category is not in global defaults, it's custom
-          if (!globalNames.has(categoryName)) {
-            customCategoriesFound.add({
-              name: transaction.category,
-              type: transaction.type || 'spend', // default to spend if type not specified
-              createdAt: transaction.date || new Date(),
-              isMigrated: true
-            })
-          }
-        }
-      })
 
-      // Save found custom categories
-      if (customCategoriesFound.size > 0) {
-        const customCollectionRef = collection(db, 'apps', 'budget', 'userCategories', userId, 'customCategories')
-        
-        for (const customCat of customCategoriesFound) {
-          await addDoc(customCollectionRef, customCat)
-        }
-        
-        await loadUserCustomCategories()
-        console.log(`Migrated ${customCategoriesFound.size} custom categories from transactions`)
-      }
-    } catch (err) {
-      console.error('Error migrating from transactions:', err)
-    }
-  }
 
-  // DEPRECATED: Old migration function - no longer needed after script migration
-  const migrateToHybridStructure = async (oldCategories) => {
-    // This function is deprecated - migration already completed with script
-    // Categories are now stored in structured format: {income: [], spend: [], savings: []}
-    console.log('Migration function deprecated - using structured format')
-    return
-  }
 
   // Create default categories for a new user (now just ensures global categories exist)
   const createDefaultCategories = async () => {
@@ -339,9 +238,9 @@ export function useCategories(userId) {
       // Just ensure we have loaded user's custom categories
       await loadUserCustomCategories()
       
-      console.log('Categories ensured for user:', userId)
+
     } catch (err) {
-      console.error('Error ensuring categories:', err)
+
       error.value = 'Failed to load categories'
       showError('Failed to load categories')
     }
@@ -388,7 +287,7 @@ export function useCategories(userId) {
       showSuccess(`Category "${name}" added successfully`)
       return true
     } catch (err) {
-      console.error('Error adding category:', err)
+
       showError('Failed to add category')
       return false
     }
@@ -449,7 +348,7 @@ export function useCategories(userId) {
       showError('Category not found')
       return false
     } catch (err) {
-      console.error('Error updating category:', err)
+
       showError('Failed to update category')
       return false
     }
@@ -497,7 +396,7 @@ export function useCategories(userId) {
       showError('Category not found')
       return false
     } catch (err) {
-      console.error('Error deleting category:', err)
+
       showError('Failed to delete category')
       return false
     }
@@ -512,7 +411,7 @@ export function useCategories(userId) {
       const docSnap = await getDoc(docRef)
       return docSnap.exists() && docSnap.data().categories?.length > 0
     } catch (err) {
-      console.error('Error checking user categories:', err)
+
       return false
     }
   }
@@ -535,7 +434,7 @@ export function useCategories(userId) {
       await checkAndMigrateOldStructure()
       
     } catch (err) {
-      console.error('Error initializing categories:', err)
+
       error.value = 'Failed to initialize categories'
     } finally {
       loading.value = false
@@ -564,7 +463,6 @@ export function useCategories(userId) {
     addCategory,
     updateCategory,
     deleteCategory,
-    checkAndMigrateOldStructure,
-    migrateFromTransactions
+    checkAndMigrateOldStructure
   }
 }

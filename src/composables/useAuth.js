@@ -21,7 +21,7 @@ export function useAuth() {
       if (u) {
         // don't block UI: run async and log errors
         ensureUserDoc(u).catch((err) => {
-          console.error("ensureUserDoc error:", err);
+
         });
       }
     });
@@ -30,7 +30,7 @@ export function useAuth() {
   // create user doc if missing and ensure categories exist
   async function ensureUserDoc(u) {
     if (!u || !u.uid) {
-      console.warn("ensureUserDoc: no user provided");
+
       return;
     }
 
@@ -61,12 +61,12 @@ export function useAuth() {
       const { initCategories } = useCategories(userId);
       
       // Initialize hybrid category structure (handles migration automatically)
-      console.log(`Initializing categories for user ${userId} (new: ${isNewUser})`);
+
       await initCategories();
       
     } catch (error) {
       // Don't break auth flow if category initialization fails
-      console.error("Error initializing user categories:", error);
+
       // We could add analytics/monitoring here for production
     }
   }

@@ -60,7 +60,7 @@ export function useInAppNotifications() {
     try {
       await Promise.all(promises)
     } catch (error) {
-      console.error('Errore nella creazione delle notifiche:', error)
+
     }
   }
 
@@ -113,7 +113,7 @@ export function useInAppNotifications() {
         read: true
       })
     } catch (error) {
-      console.error('Errore nel segnare la notifica come letta:', error)
+
     }
   }
 
@@ -125,7 +125,7 @@ export function useInAppNotifications() {
     try {
       await Promise.all(promises)
     } catch (error) {
-      console.error('Errore nel segnare tutte le notifiche come lette:', error)
+
     }
   }
 
@@ -166,7 +166,7 @@ export function useInAppNotifications() {
 
       return Array.from(sharedUserIds)
     } catch (error) {
-      console.error('Errore nel recuperare gli utenti condivisi:', error)
+
       return []
     }
   }
@@ -215,9 +215,9 @@ export function useInAppNotifications() {
       )
 
       await Promise.all(deletePromises)
-      console.log(`Cleanup: ${deletePromises.length} old notifications deleted`)
+
     } catch (error) {
-      console.error('Errore durante la pulizia delle notifiche:', error)
+
     }
   }
 
@@ -251,9 +251,9 @@ export function useInAppNotifications() {
       )
 
       await Promise.all(deletePromises)
-      console.log(`Deleted ${deletePromises.length} read notifications`)
+
     } catch (error) {
-      console.error('Errore durante l\'eliminazione delle notifiche lette:', error)
+
     }
   }
 
@@ -302,9 +302,9 @@ export function useInAppNotifications() {
       )
 
       await Promise.all(deletePromises)
-      console.log(`Cleanup: ${deletePromises.length} old read notifications deleted`)
+
     } catch (error) {
-      console.error('Errore durante la pulizia delle notifiche lette:', error)
+
     }
   }
 

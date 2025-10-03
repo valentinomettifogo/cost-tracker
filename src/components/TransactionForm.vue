@@ -87,7 +87,7 @@
 <script setup>
 import { ref, onMounted, watch, computed } from "vue";
 import { db } from "../firebase";
-import { collection, addDoc, updateDoc, Timestamp, doc, getDoc } from "firebase/firestore";
+import { collection, addDoc, updateDoc, Timestamp, doc } from "firebase/firestore";
 import { useModal } from "../composables/useModal";
 import { useCategories } from "../composables/useCategories";
 const props = defineProps({
@@ -297,7 +297,7 @@ async function sendNotificationForNewTransaction(transactionData) {
       );
     }
   } catch (error) {
-    console.error('Errore nell\'invio delle notifiche:', error);
+
     // Non bloccare il salvataggio se le notifiche falliscono
   }
 }
@@ -424,7 +424,7 @@ const handleSubmit = async () => {
       });
       resetForm();
     } catch (e) {
-      console.error("Error updating document: ", e);
+
       showError("Failed to update transaction. Please try again.", "Update Error");
     }
   } else {
@@ -486,7 +486,7 @@ const handleSubmit = async () => {
       
       resetForm();
     } catch (e) {
-      console.error("Error adding document: ", e);
+
       showError("Failed to save transaction. Please try again.", "Save Error");
     }
   }

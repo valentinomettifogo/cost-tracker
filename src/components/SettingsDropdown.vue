@@ -75,7 +75,7 @@ const handleLogout = async () => {
     await signOut(auth)
     closeDropdown()
   } catch (error) {
-    console.error('Error logging out:', error)
+
   }
 }
 

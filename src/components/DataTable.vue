@@ -515,7 +515,7 @@ async function handleDelete(id) {
     await deleteDoc(doc(db, 'apps', 'budget', 'transactions', id));
     emit('deleted', id);
   } catch (error) {
-    console.error('Error deleting transaction:', error);
+
     showError('Failed to delete transaction. Please try again.', 'Delete Error');
   }
 }
