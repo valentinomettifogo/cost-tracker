@@ -4,30 +4,7 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { useToast } from './useToast'
 
 
-// Global default categories (shared across all users) - Based on your existing categories
-export const GLOBAL_DEFAULT_CATEGORIES = {
-  income: [
-    'Paycheck'
-  ],
-  spend: [
-    'Mortgage',
-    'Restaurant', 
-    'Bills',
-    'Health',
-    'Transportation',
-    'Entertainment',
-    'Groceries',
-    'Parents',
-    'Clothing/Accessories',
-    'Lunch @ work',
-    'Home',
-    'Travel',
-    'Utilities'
-  ],
-  savings: [
-    'Savings'
-  ]
-}
+
 
 
 
@@ -101,42 +78,25 @@ export function useCategories(userId) {
         await initializeGlobalCategories()
       }
     } catch (err) {
-      // Fallback to hardcoded defaults
-      globalCategories.value = createGlobalCategoryObjects()
+      // If we can't load from Firestore, leave empty
+      globalCategories.value = []
     }
   }
 
   // Initialize global categories in Firestore (one-time setup)
   const initializeGlobalCategories = async () => {
     try {
-      const docRef = doc(db, 'apps', 'budget', 'config', 'globalCategories')
-      await setDoc(docRef, {
-        categories: GLOBAL_DEFAULT_CATEGORIES,
-        createdAt: new Date(),
-        version: 1
-      })
-      globalCategories.value = createGlobalCategoryObjects()
+      // Global categories should already exist in Firestore
+      // If they don't exist, it means the database needs to be properly initialized
+      // This function is kept for compatibility but should not be used
+      globalCategories.value = []
     } catch (err) {
       // Silent error handling
+      globalCategories.value = []
     }
   }
 
-  // Create global category objects from hardcoded data
-  const createGlobalCategoryObjects = () => {
-    const globals = []
-    Object.entries(GLOBAL_DEFAULT_CATEGORIES).forEach(([type, names]) => {
-      names.forEach((name, index) => {
-        globals.push({
-          id: `global_${type}_${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
-          name: name,
-          type: type,
-          isDefault: true,
-          isGlobal: true
-        })
-      })
-    })
-    return globals
-  }
+
 
   // Load user's custom categories (new structured format)
   const loadUserCustomCategories = async () => {
