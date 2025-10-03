@@ -511,6 +511,7 @@ const vClickOutside = {
   .dropdown {
     width: 300px;
     right: -120px;
+    right: 0;
     max-height: 70vh;
   }
 }
@@ -545,7 +546,8 @@ const vClickOutside = {
   .dropdown {
     width: calc(100vw - 20px);
     right: auto;
-    left: -280px;
+    left: -270px;
+    right: 0;
     max-height: 60vh;
   }
   

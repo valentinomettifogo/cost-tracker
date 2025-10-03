@@ -17,42 +17,67 @@
     <div class="">
       <header>
         <nav class="navbar">
-          <div class="nav-top">
+          <!-- Desktop Layout: Single row -->
+          <div class="nav-desktop">
             <div class="nav-brand">
               <h2>{{ user?.displayName || user?.email || 'User' }}</h2>
             </div>
-            <div class="nav-right">
-              <NotificationBell />
-              <button class="logout-btn" @click="logout">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M16 13v-2H7V8l-5 4 5 4v-3z"/>
-                  <path d="M20 3h-9c-1.103 0-2 .897-2 2v4h2V5h9v14h-9v-4H9v4c0 1.103.897 2 2 2h9c1.103 0 2-.897 2-2V5c0-1.103-.897-2-2-2z"/>
+            <div class="nav-center">
+              <button :class="{ active: currentView === 'form' }" @click="show('form')" class="nav-center-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                 </svg>
-                Logout
+                Add
+              </button>
+              <button :class="{ active: currentView === 'datatable' }" @click="show('datatable')" class="nav-center-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 3v18h18V3H3zm16 16H5V5h14v14z"/>
+                  <path d="M7 7h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM7 15h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/>
+                </svg>
+                Detail
+              </button>
+              <button :class="{ active: currentView === 'stats' }" @click="show('stats')" class="nav-center-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 3v18h18V3H3zm16 16H5V5h14v14z"/>
+                  <path d="M7 12h2v5H7zm4-3h2v8h-2zm4-3h2v11h-2z"/>
+                </svg>
+                Stat
               </button>
             </div>
+            <div class="nav-right">
+              <NotificationBell />
+              <SettingsDropdown :user="user" />
+            </div>
           </div>
-          <div class="nav-center">
-            <button :class="{ active: currentView === 'form' }" @click="show('form')">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-              </svg>
-              Add Transaction
-            </button>
-            <button :class="{ active: currentView === 'datatable' }" @click="show('datatable')">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M3 3v18h18V3H3zm16 16H5V5h14v14z"/>
-                <path d="M7 7h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM7 15h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/>
-              </svg>
-              Transactions
-            </button>
-            <button :class="{ active: currentView === 'stats' }" @click="show('stats')">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M3 3v18h18V3H3zm16 16H5V5h14v14z"/>
-                <path d="M7 12h2v5H7zm4-3h2v8h-2zm4-3h2v11h-2z"/>
-              </svg>
-              Stats
-            </button>
+          
+          <!-- Mobile Layout: Single row -->
+          <div class="nav-mobile">
+            <div class="nav-center">
+              <button :class="{ active: currentView === 'form' }" @click="show('form')" class="nav-center-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+                Add
+              </button>
+              <button :class="{ active: currentView === 'datatable' }" @click="show('datatable')" class="nav-center-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 3v18h18V3H3zm16 16H5V5h14v14z"/>
+                  <path d="M7 7h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM7 15h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/>
+                </svg>
+                Detail
+              </button>
+              <button :class="{ active: currentView === 'stats' }" @click="show('stats')" class="nav-center-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 3v18h18V3H3zm16 16H5V5h14v14z"/>
+                  <path d="M7 12h2v5H7zm4-3h2v8h-2zm4-3h2v11h-2z"/>
+                </svg>
+                Stat
+              </button>
+            </div>
+            <div class="nav-right">
+              <NotificationBell />
+              <SettingsDropdown :user="user" />
+            </div>
           </div>
         </nav>
       </header>
@@ -101,6 +126,7 @@ import Login from './components/Login.vue';
 import Stats from './components/Stats.vue';
 import Modal from './components/Modal.vue';
 import NotificationBell from './components/NotificationBell.vue';
+import SettingsDropdown from './components/SettingsDropdown.vue';
 import ToastContainer from './components/ToastContainer.vue';
 import { ref, onMounted } from 'vue';
 import { db, auth } from './firebase';
@@ -216,10 +242,7 @@ async function show(view) {
   }
 }
 
-// Auth functions
-const logout = async () => {
-  await signOut(auth);
-};
+// Auth functions (logout now handled by SettingsDropdown)
 
 function onEditTransaction(tx) {
   transactionToEdit.value = tx;
@@ -244,6 +267,18 @@ function onTransactionEdited(updatedTx) {
   padding: 1rem;
 }
 
+/* Desktop Layout: Single row */
+.nav-desktop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-mobile {
+  display: none;
+}
+
 .nav-top {
   display: flex;
   justify-content: space-between;
@@ -252,8 +287,8 @@ function onTransactionEdited(updatedTx) {
 }
 
 .nav-brand {
-  flex: 3;
-  padding-right: 1rem;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .nav-brand h2 {
@@ -267,18 +302,20 @@ function onTransactionEdited(updatedTx) {
 }
 
 .nav-right {
-  flex: 1;
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 .nav-center {
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
 }
 
 nav button {
@@ -309,26 +346,7 @@ nav button.active {
   font-weight: 600;
 }
 
-.logout-btn {
-  background: #ef4444 !important;
-  color: white !important;
-  border-radius: 8px;
-  padding: 0.5rem 0.875rem !important;
-  font-weight: 600;
-  font-size: 0.8rem !important;
-  min-width: fit-content;
-}
 
-.logout-btn:hover {
-  background: #dc2626 !important;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
-.logout-btn svg {
-  width: 14px;
-  height: 14px;
-}
 
 /* Mobile responsive */
 @media (max-width: 768px) {
@@ -336,39 +354,45 @@ nav button.active {
     padding: 0.75rem;
   }
   
-  .nav-top {
-    margin-bottom: 0.75rem;
+  /* Hide desktop layout, show mobile layout */
+  .nav-desktop {
+    display: none;
   }
   
-  .nav-brand h2 {
-    font-size: 1.1rem;
+  .nav-mobile {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
   }
   
   .nav-center {
+    display: flex;
     gap: 0.25rem;
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .nav-right {
+    flex-shrink: 0;
   }
   
   nav button {
-    font-size: 0.75rem;
-    padding: 0.5rem 0.75rem;
+    font-size: 0.7rem;
+    padding: 0.4rem 0.6rem;
     flex-direction: column;
     gap: 0.25rem;
-    min-width: 80px;
+    min-width: 70px;
+  }
+  
+  .nav-center-btn {
+    flex: 1;
+    max-width: 80px;
   }
   
   nav button svg {
     width: 16px;
     height: 16px;
-  }
-  
-  .logout-btn {
-    font-size: 0.7rem !important;
-    padding: 0.5rem 0.7rem !important;
-  }
-  
-  .logout-btn svg {
-    width: 12px;
-    height: 12px;
   }
 }
 
@@ -413,5 +437,13 @@ nav button.active {
   font-size: 1.1rem;
   margin-bottom: 2rem;
 }
-
+/* Nav-center button: same width for all */
+.nav-center-btn {
+  flex: 1 1 0;
+  min-width: 90px;
+  max-width: 120px;
+  justify-content: center;
+  text-align: center;
+}
 </style>
+
