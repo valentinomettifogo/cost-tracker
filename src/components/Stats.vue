@@ -2,8 +2,21 @@
   <div class="stats-container">
     <div class="stats-header">
       
+      <!-- Toggle Filters Button (Desktop) -->
+      <button class="toggle-filters-btn desktop-toggle" @click="filtersOpen = !filtersOpen">
+        <span v-if="!filtersOpen">Show Filters</span>
+        <span v-else>Hide Filters</span>
+        <svg v-if="!filtersOpen" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M7 10l5 5 5-5z"/>
+        </svg>
+        <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M7 14l5-5 5 5z"/>
+        </svg>
+      </button>
+      
       <!-- Desktop Filters -->
-      <div class="filters desktop-filters">
+      <transition name="fade">
+        <div v-show="filtersOpen" class="filters desktop-filters">
         <div class="filter-group">
           <label for="yearFilter">Year:</label>
           <select id="yearFilter" v-model="selectedYear" @change="updateCharts">
@@ -30,10 +43,24 @@
         </div>
         
         <button @click="resetFilters" class="reset-btn">Reset Filters</button>
-      </div>
+        </div>
+      </transition>
+
+      <!-- Toggle Filters Button (Mobile) -->
+      <button class="toggle-filters-btn mobile-toggle" @click="mobileFiltersOpen = !mobileFiltersOpen">
+        <span v-if="!mobileFiltersOpen">Show Filters</span>
+        <span v-else>Hide Filters</span>
+        <svg v-if="!mobileFiltersOpen" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M7 10l5 5 5-5z"/>
+        </svg>
+        <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M7 14l5-5 5 5z"/>
+        </svg>
+      </button>
 
       <!-- Mobile Filters -->
-      <div class="mobile-filters">
+      <transition name="fade">
+        <div v-show="mobileFiltersOpen" class="mobile-filters">
         <!-- Filtri con layout labels/boxes -->
         <div class="filters-layout">
           <div class="labels-column">
@@ -69,7 +96,8 @@
             Reset
           </button>
         </div>
-      </div>
+        </div>
+      </transition>
     </div>
 
     <!-- Stats Summary Cards -->
@@ -180,6 +208,10 @@ let pieChartInstance = null;
 const selectedYear = ref('all');
 const selectedMonth = ref('ytd');
 const selectedCategory = ref('all');
+
+// Collapsible filters state
+const filtersOpen = ref(false); // desktop
+const mobileFiltersOpen = ref(false); // mobile
 
 // Dati per i selettori
 const months = [
@@ -526,6 +558,55 @@ watch(() => props.transactions, () => {
 </script>
 
 <style scoped>
+/* Fade transition for filters */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Toggle Filters Button */
+.toggle-filters-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #374151;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.toggle-filters-btn:hover {
+  background: #4b5563;
+}
+.desktop-toggle {
+  display: none;
+}
+.mobile-toggle {
+  display: none;
+}
+@media (min-width: 768px) {
+  .desktop-toggle {
+    display: inline-flex;
+  }
+}
+@media (max-width: 767px) {
+  .mobile-toggle {
+    display: inline-flex;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+  }
+}
+
 .stats-container {
   max-width: 1200px;
   margin: 0 auto;

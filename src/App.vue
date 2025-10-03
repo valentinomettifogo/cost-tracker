@@ -19,9 +19,9 @@
         <nav class="navbar">
           <!-- Desktop Layout: Single row -->
           <div class="nav-desktop">
-            <div class="nav-brand">
+            <!-- <div class="nav-brand">
               <h2>{{ user?.displayName || user?.email || 'User' }}</h2>
-            </div>
+            </div> -->
             <div class="nav-center">
               <button :class="{ active: currentView === 'form' }" @click="show('form')" class="nav-center-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
