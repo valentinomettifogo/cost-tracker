@@ -115,7 +115,12 @@
           <h4>Total Spends</h4>
           <span class="icon">📉</span>
         </div>
-        <div class="card-value">€{{ formatCurrency(totalCosts) }}</div>
+        <div class="card-value-row">
+          <div class="card-value">€{{ formatCurrency(totalCosts) }}</div>
+          <div class="card-percentage-inline" v-if="totalIncome > 0">
+            {{ spendPercentage.toFixed(1) }}%<span class="desktop-only"> of income</span>
+          </div>
+        </div>
       </div>
       
       <div class="card saving">
@@ -123,7 +128,12 @@
           <h4>Total Savings</h4>
           <span class="icon">💰</span>
         </div>
-        <div class="card-value">€{{ formatCurrency(totalSavings) }}</div>
+        <div class="card-value-row">
+          <div class="card-value">€{{ formatCurrency(totalSavings) }}</div>
+          <div class="card-percentage-inline" v-if="totalIncome > 0">
+            {{ savingsPercentage.toFixed(1) }}%<span class="desktop-only"> of income</span>
+          </div>
+        </div>
       </div>
       
       <div class="card balance">
@@ -131,7 +141,12 @@
           <h4>Net Balance</h4>
           <span class="icon">⚖️</span>
         </div>
-        <div class="card-value" :class="{ negative: netBalance < 0 }">€{{ formatCurrency(netBalance) }}</div>
+        <div class="card-value-row">
+          <div class="card-value" :class="{ negative: netBalance < 0 }">€{{ formatCurrency(netBalance) }}</div>
+          <div class="card-percentage-inline" v-if="totalIncome > 0" :class="{ negative: netBalance < 0 }">
+            {{ netBalancePercentage.toFixed(1) }}%<span class="desktop-only"> of income</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -329,6 +344,22 @@ const totalSavings = computed(() => {
 
 const netBalance = computed(() => {
   return totalIncome.value - totalCosts.value - totalSavings.value;
+});
+
+// Percentage computeds
+const spendPercentage = computed(() => {
+  if (totalIncome.value === 0) return 0;
+  return (totalCosts.value / totalIncome.value * 100);
+});
+
+const savingsPercentage = computed(() => {
+  if (totalIncome.value === 0) return 0;
+  return (totalSavings.value / totalIncome.value * 100);
+});
+
+const netBalancePercentage = computed(() => {
+  if (totalIncome.value === 0) return 0;
+  return (netBalance.value / totalIncome.value * 100);
 });
 
 // Chart data computeds
@@ -830,6 +861,51 @@ watch(() => props.transactions, () => {
 
 .card-value.negative {
   color: #dc2626;
+}
+
+.card-value-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.card-percentage-inline {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 600;
+  opacity: 0.8;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.card-percentage-inline.negative {
+  color: #dc2626;
+}
+
+/* Nascondi 'of income' su mobile */
+.desktop-only {
+  display: none;
+}
+
+/* Desktop: percentuali sotto */
+@media (min-width: 768px) {
+  .card-value-row {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .card-percentage-inline {
+    font-size: 0.875rem;
+    margin-left: 0;
+    margin-top: 0.25rem;
+  }
+  
+  .desktop-only {
+    display: inline;
+  }
 }
 
 .charts-container {
