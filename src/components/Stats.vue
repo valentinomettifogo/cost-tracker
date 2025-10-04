@@ -226,7 +226,7 @@ let barChartInstance = null;
 let pieChartInstance = null;
 
 // Filtri
-const selectedYear = ref('all');
+const selectedYear = ref(new Date().getFullYear().toString());
 const selectedMonth = ref('ytd');
 const selectedCategory = ref('all');
 
