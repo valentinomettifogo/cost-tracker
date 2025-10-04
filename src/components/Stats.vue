@@ -28,8 +28,10 @@
         <div class="filter-group">
           <label for="monthFilter">Month:</label>
           <select id="monthFilter" v-model="selectedMonth" @change="updateCharts">
-            <option value="all">All Months</option>
+            <option value="current">Current Month</option>
             <option value="ytd">YTD (Jan-Current)</option>
+            <option value="all">Full Year</option>
+            <option disabled>──────────</option>
             <option v-for="(month, index) in months" :key="index" :value="index + 1">{{ month }}</option>
           </select>
         </div>
@@ -76,8 +78,10 @@
             </select>
             
             <select v-model="selectedMonth" @change="updateCharts" class="filter-select uniform-size">
-              <option value="all">All Months</option>
+              <option value="current">Current Month</option>
               <option value="ytd">YTD (Jan-Current)</option>
+              <option value="all">Full Year</option>
+              <option disabled>──────────</option>
               <option v-for="(month, index) in months" :key="index" :value="index + 1">{{ month }}</option>
             </select>
             
@@ -227,7 +231,7 @@ let pieChartInstance = null;
 
 // Filtri
 const selectedYear = ref(new Date().getFullYear().toString());
-const selectedMonth = ref('ytd');
+const selectedMonth = ref('current');
 const selectedCategory = ref('all');
 
 // Collapsible filters state
@@ -309,6 +313,10 @@ const filteredTransactions = computed(() => {
     let monthMatch;
     if (selectedMonth.value === 'all') {
       monthMatch = true;
+    } else if (selectedMonth.value === 'current') {
+      // Current month only
+      const currentMonth = getCurrentMonth();
+      monthMatch = month === currentMonth;
     } else if (selectedMonth.value === 'ytd') {
       // YTD: from January to current month (inclusive)
       const currentMonth = getCurrentMonth();
@@ -447,8 +455,8 @@ const pieChartData = computed(() => {
 
 // Methods
 const resetFilters = () => {
-  selectedYear.value = 'all';
-  selectedMonth.value = 'ytd';
+  selectedYear.value = new Date().getFullYear().toString();
+  selectedMonth.value = 'current';
   selectedCategory.value = 'all';
   updateCharts();
 };
